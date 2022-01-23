@@ -8,27 +8,34 @@ namespace NeuralNetworkVisualizer.Network;
 
 internal class Network
 {
-    private readonly List<Layer> layers = new List<Layer>();
-    private readonly int inputSize;
-    private readonly int outputSize;
+    private readonly List<ILayer> layers = new List<ILayer>();
+    private readonly int inputCount;
+    private double[]? lastOutput;
 
-    public Network(params LayerProperties[] layerProperties)
+    public Network(int inputCount)
     {
-        inputSize = layerProperties[0].Size;
+        this.inputCount = inputCount;
+    }
 
-        var prevSize = inputSize;
-        foreach (var layer in layerProperties.Skip(1))
-        {
-            layers.Add(new Layer(prevSize, layer.Size, layer.ActivationType));
-            prevSize = layer.Size;
-        }
-        outputSize = prevSize;
+    public Network AddDenseLayer(int size)
+    {
+        var input = layers.LastOrDefault()?.Size ?? inputCount;
+
+        layers.Add(new DenseLayer(input, size));
+        return this;
+    }
+
+    public Network AddActivationLayer(ActivationType activationType)
+    {
+        layers.Add(new ActivationLayer(layers.Last().Size, activationType));
+        return this;
     }
 
     public double[] Process(Span<double> inputs)
     {
         if (inputs == null) throw new ArgumentNullException(nameof(inputs));
-        if (inputs.Length != inputSize) throw new ArgumentOutOfRangeException(nameof(inputs));
+        if (inputs.Length != inputCount) throw new ArgumentOutOfRangeException(nameof(inputs));
+
 
         var result = inputs.ToArray();
         foreach (var layer in layers)
@@ -36,7 +43,31 @@ internal class Network
             result = layer.Forward(result);
         }
 
+        lastOutput = result;
         return result;
+    }
+
+    public double Cost(Span<double> expected)
+    {
+        if (lastOutput == null) throw new InvalidOperationException("Cannot calculate cost without running network");
+        if (expected == null) throw new ArgumentNullException(nameof(expected));
+
+        double result = 0d;
+        for(var i = 0; i < expected.Length; i++)
+        {
+            result += Math.Pow(expected[i] - lastOutput[i], 2);
+        }
+
+        return result / expected.Length;
+    }
+
+    public void Learn(Span<double> expected, double learningRate)
+    {
+        double[] result = expected.ToArray();
+        for(var i = layers.Count - 1; i >= 0; i--)
+        {
+            result = layers[i].Backward(result, learningRate);
+        }
     }
 
     public void Randomize()

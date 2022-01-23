@@ -41,11 +41,12 @@ namespace NeuralNetworkVisualizer
                 DrawExpected();
             };
 
-            network = new Network.Network(
-                new Network.LayerProperties() { Size = 1, ActivationType = Network.ActivationType.None },
-                new Network.LayerProperties() { Size = 16, ActivationType = Network.ActivationType.ReLU },
-                new Network.LayerProperties() { Size = 16, ActivationType = Network.ActivationType.Softmax },
-                new Network.LayerProperties() { Size = 1, ActivationType = Network.ActivationType.None });
+            network = new Network.Network(1)
+                .AddDenseLayer(16)
+                .AddActivationLayer(Network.ActivationType.ReLU)
+                .AddDenseLayer(16)
+                .AddActivationLayer(Network.ActivationType.Softmax)
+                .AddDenseLayer(1);
 
             network.Randomize();
         }
