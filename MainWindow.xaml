@@ -7,7 +7,12 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="800" Width="800">
     <Grid>
-        <Button x:Name="PredictButton" Height="40" Width="100" HorizontalAlignment="Left" VerticalAlignment="Top" Panel.ZIndex="10" Click="PredictButton_Click">Predict</Button>
+        <StackPanel Orientation="Horizontal" Height="50" Panel.ZIndex="10" VerticalAlignment="Top">
+            <Button x:Name="LearnButton" Margin="5" Height="40" Width="100" Click="LearnButton_Click">Learn</Button>
+            <Button x:Name="InitButton" Margin="5" Height="40" Width="100" Click="InitButton_Click">Init</Button>
+            <TextBlock x:Name="StatusText" FontSize="26">Status</TextBlock>
+        </StackPanel>
+        
         <Border BorderThickness="3" BorderBrush="Black" CornerRadius="5" Margin="5,5,5,5">
             <Canvas x:Name="Canvas" Background="LightGray" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
             

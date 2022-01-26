@@ -8,9 +8,12 @@ namespace NeuralNetworkVisualizer.Network
 {
     internal class DenseLayer : ILayer
     {
+        private const double evolutionRate = 0.001d;
+        
         private readonly double[] biases;
         private readonly double[] weights;
-        private double[]? lastOutput;
+        private readonly double[] evolutionWeightsCache;
+        private readonly double[] evolutionBiasesCache;
 
         public int Size { get; }
         public int InputSize { get; }
@@ -22,6 +25,9 @@ namespace NeuralNetworkVisualizer.Network
 
             biases = new double[size];
             weights = new double[size * inputs];
+
+            evolutionBiasesCache = new double[biases.Length];
+            evolutionWeightsCache = new double[weights.Length];
         }
 
         public double[] Forward(Span<double> input)
@@ -32,53 +38,13 @@ namespace NeuralNetworkVisualizer.Network
             var i = 0;
             for (var k = 0; k < input.Length; k++)
             {
-                for (var j = 0; j < InputSize; j++)
+                for (var j = 0; j < Size; j++)
                 {
                     output[j] += weights[i++] * input[k];
                 }
             }
 
-            lastOutput = output;
             return output;
-        }
-
-        public double[] Backward(Span<double> expected, double learningRate)
-        {
-            if (expected.Length != Size) throw new ArgumentException(nameof(expected));
-            if (lastOutput is null) throw new InvalidOperationException("Cannot go backwards before you go forwards");
-
-            var z = new double[Size];
-
-            for (var k = 0; k < Size; k++)
-            {
-                z[k] = lastOutput[k] - expected[k];
-            }
-
-            var dw = new double[Size];
-            var i = 0;
-            for (var j = 0; j < InputSize; j++)
-            {
-                for (int k = 0; k < Size; k++)
-                {
-                    dw[k] += z[k] * weights[i++];
-                }
-            }
-
-            i = 0;
-            for (var j = 0; j < InputSize; j++)
-            {
-                for (int k = 0; k < Size; k++)
-                {
-                    dw[k] += z[k] * weights[i++];
-                }
-            }
-
-            //for (int k = 0; k < Size; k++)
-            //{
-            //    dw[k] += dw[k] * (1 / InputSize) * learningRate;
-            //}
-
-            return z;
         }
 
         public void Randomize(int? seed = null)
@@ -93,6 +59,31 @@ namespace NeuralNetworkVisualizer.Network
             {
                 weights[i] = (rng.NextDouble() * 8) - 4.0d;
             }
+        }
+
+        public void Evolve(double cost)
+        {
+            Array.Copy(weights, evolutionWeightsCache, weights.Length); 
+            Array.Copy(biases, evolutionBiasesCache, biases.Length);
+
+            var rng = new Random((int)DateTime.Now.Ticks);
+            var localRate = evolutionRate;
+
+            for (var i = 0; i < biases.Length; i++)
+            {
+                biases[i] += (rng.NextDouble() * localRate) - (localRate * 0.5d);
+            }
+
+            for (var i = 0; i < weights.Length; i++)
+            {
+                weights[i] += (rng.NextDouble() * localRate) - (localRate * 0.5d);
+            }
+        }
+
+        public void Discard()
+        {
+            Array.Copy(evolutionWeightsCache, weights, weights.Length);
+            Array.Copy(evolutionBiasesCache, biases, biases.Length);
         }
     }
 }

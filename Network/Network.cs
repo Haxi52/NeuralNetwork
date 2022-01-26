@@ -8,9 +8,8 @@ namespace NeuralNetworkVisualizer.Network;
 
 internal class Network
 {
-    private readonly List<ILayer> layers = new List<ILayer>();
+    private readonly List<ILayer> layers = new();
     private readonly int inputCount;
-    private double[]? lastOutput;
 
     public Network(int inputCount)
     {
@@ -31,7 +30,7 @@ internal class Network
         return this;
     }
 
-    public double[] Process(Span<double> inputs)
+    public double[] Process(ReadOnlySpan<double> inputs)
     {
         if (inputs == null) throw new ArgumentNullException(nameof(inputs));
         if (inputs.Length != inputCount) throw new ArgumentOutOfRangeException(nameof(inputs));
@@ -43,31 +42,65 @@ internal class Network
             result = layer.Forward(result);
         }
 
-        lastOutput = result;
         return result;
     }
 
-    public double Cost(Span<double> expected)
-    {
-        if (lastOutput == null) throw new InvalidOperationException("Cannot calculate cost without running network");
-        if (expected == null) throw new ArgumentNullException(nameof(expected));
 
-        double result = 0d;
-        for(var i = 0; i < expected.Length; i++)
+    public double Learn(double[] inputs, double[] expected)
+    {
+        var output = new double[inputs.Length];
+        ProcessBatch(inputs, output);
+        double cost = Cost(expected, output);
+        var maxEpoc = 50;
+
+        while (maxEpoc-- > 0)
         {
-            result += Math.Pow(expected[i] - lastOutput[i], 2);
+            for (var i = layers.Count - 1; i >= 0; i--)
+            {
+                layers[i].Evolve(cost);
+            }
+
+            ProcessBatch(inputs, output);
+            double cost2 = Cost(expected, output);
+
+            if (cost2 > cost)
+            {
+                maxEpoc--; // extra penaltiy if its worse
+                for (var i = layers.Count - 1; i >= 0; i--)
+                {
+                    layers[i].Discard();
+                }
+            }
+            else
+            {
+                cost = cost2;
+            }
         }
 
-        return result / expected.Length;
+        return cost;
     }
 
-    public void Learn(Span<double> expected, double learningRate)
+    private void ProcessBatch(double[] inputs, double[] outputs)
     {
-        double[] result = expected.ToArray();
-        for(var i = layers.Count - 1; i >= 0; i--)
+
+        var batchSize = inputs.Length / Environment.ProcessorCount;
+        var products = new List<(int start, int end)>();
+        var i = 0;
+        while (i < inputs.Length)
         {
-            result = layers[i].Backward(result, learningRate);
+            var start = i;
+            var end = Math.Min(i + batchSize, inputs.Length);
+            products.Add((start, end));
+            i = end;
         }
+
+        Parallel.ForEach(products, job =>
+        {
+            for (var k = job.start; k < job.end; k++)
+            {
+                outputs[k] = Process(new[] { inputs[k] })[0];
+            }
+        });
     }
 
     public void Randomize()
@@ -78,15 +111,18 @@ internal class Network
         }
     }
 
-    public static double CCELoss(int category, double[] input)
+
+    private static double Cost(ReadOnlySpan<double> expected, ReadOnlySpan<double> actual)
     {
+        if (expected == null) throw new ArgumentNullException(nameof(expected));
+        if (actual == null) throw new ArgumentNullException(nameof(actual));
 
-        return -(double)Math.Log(Math.Clamp(input[category], 1e-7, 1 - 1e-7));
-    }
+        double result = 0d;
+        for (var i = 0; i < expected.Length; i++)
+        {
+            result += Math.Pow(expected[i] - actual[i], 2);
+        }
 
-    public static double MeanSquareErrorLoss(double[] trueValues, double[] predictedValues)
-    {
-        return (double)trueValues.Zip(predictedValues).Select(v => Math.Pow(v.First - v.Second, 2)).Average();
-
+        return result / expected.Length;
     }
 }

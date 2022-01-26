@@ -45,7 +45,6 @@ internal class ActivationLayer : ILayer
         return lastOutput;
     }
 
-    public double[] Backward(Span<double> expected, double learningRate) { return expected.ToArray(); }
 
     private static double[] Activate_ReLU(double[] input)
     {
@@ -78,4 +77,14 @@ internal class ActivationLayer : ILayer
     }
 
     public void Randomize(int? seed = null) { }
+
+    public void Evolve(double cost)
+    {
+        
+    }
+
+    public void Discard()
+    {
+        
+    }
 }

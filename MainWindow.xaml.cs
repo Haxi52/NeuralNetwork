@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Timers;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -28,6 +29,11 @@ namespace NeuralNetworkVisualizer
         private readonly List<UIElement> PredictedPoints = new List<UIElement>();
 
         private readonly Network.Network network;
+        private int generations = 0;
+        private double cost = 0f;
+        private volatile bool isLearning = false;
+        private string statusText = string.Empty;
+
 
         public MainWindow()
         {
@@ -51,7 +57,6 @@ namespace NeuralNetworkVisualizer
             network.Randomize();
         }
 
-
         private void DrawGraph()
         {
             this.Canvas.Children.Clear();
@@ -67,7 +72,7 @@ namespace NeuralNetworkVisualizer
 
         private void DrawExpected()
         {
-            for(double i = -1; i <= 1d; i+= 0.001d)
+            for (double i = -1; i <= 1d; i += 0.001d)
             {
                 ExpectedPoints.Add(
                     DrawPoint(new Point(i, Fit(i)), 4.0d, brush: Brushes.Green));
@@ -79,9 +84,75 @@ namespace NeuralNetworkVisualizer
             return Math.Sin(i * Math.PI) / Math.PI;
         }
 
-        private double Predict(double i)
+        private async Task PredictAndDraw()
         {
-            return network.Process(new[] { i })[0];
+            var predictions = new List<Point>();
+
+            var sw = new Stopwatch();
+            sw.Start();
+
+            lock (network)
+            {
+                for (double i = -1; i <= 1d; i += 0.001d)
+                {
+                    predictions.Add(new Point(i, network.Process(new[] { i })[0]));
+                }
+            }
+            sw.Stop();
+
+            Debug.WriteLine($"Predict and draw: {System.Threading.Thread.CurrentThread.ManagedThreadId}");
+
+            await Dispatcher.InvokeAsync(() =>
+            {
+                Debug.WriteLine($"Update UI: {System.Threading.Thread.CurrentThread.ManagedThreadId}");
+                foreach (var element in PredictedPoints)
+                {
+                    Canvas.Children.Remove(element);
+                }
+                PredictedPoints.Clear();
+
+                foreach (var p in predictions)
+                {
+                    PredictedPoints.Add(
+                        DrawPoint(new Point(p.X, p.Y), 4.0d, brush: Brushes.Red));
+                }
+
+                StatusText.Text = $"Generations: {generations}     Cost: {cost:.000000}   Process Time: {sw.Elapsed}";
+            });
+
+            //statusText = $"Generations: {generations}     Cost: {cost}   Process Time: {sw.Elapsed}";
+        }
+
+        private async Task Learn()
+        {
+            var inputsList = new List<double>();
+            var expectedList = new List<double>();
+
+            for (double i = -1; i <= 1d; i += 0.001d)
+            {
+                inputsList.Add(i);
+                expectedList.Add(Fit(i));
+            }
+
+            var inputs = inputsList.ToArray();
+            var expected = expectedList.ToArray();
+
+            var sw = new Stopwatch();
+            while (isLearning)
+            {
+                sw.Start();
+                int epoc = 0;
+                while (sw.Elapsed < TimeSpan.FromSeconds(2) && isLearning)
+                {
+                    cost = network.Learn(inputs, expected);
+                    generations++;
+                    epoc++;
+                }
+                sw.Stop();
+                Debug.WriteLine($"Learn: {sw.ElapsedMilliseconds / epoc}");
+                sw.Reset();
+                await PredictAndDraw();
+            }
         }
 
         private UIElement DrawLine(double x1, double y1, double x2, double y2, Brush? stroke = null, double thickness = 1.0d)
@@ -148,40 +219,27 @@ namespace NeuralNetworkVisualizer
             };
         }
 
-        private void PredictButton_Click(object sender, RoutedEventArgs e)
+        private void LearnButton_Click(object sender, RoutedEventArgs e)
         {
-            network.Randomize();
-            foreach(var element in PredictedPoints)
+            if (isLearning)
             {
-                Canvas.Children.Remove(element);
+                isLearning = false;
             }
-            PredictedPoints.Clear();
-
-            var predictions = new List<Point>();
-
-            var sw = new Stopwatch();
-            sw.Start();
-
-            for (double i = -1; i <= 1d; i += 0.001d)
+            else
             {
-                predictions.Add(new Point(i, Predict(i)));
+                isLearning = true;
+                Debug.WriteLine($"Learn Button: {System.Threading.Thread.CurrentThread.ManagedThreadId}");
+                Task.Run(Learn);
             }
+        }
 
-            var min = predictions.Min(i => i.Y);
-            var max = predictions.Max(i => i.Y);
-
-
-            var range = max - min;
-
-            foreach (var p in predictions)
+        private void InitButton_Click(object sender, RoutedEventArgs e)
+        {
+            lock (network)
             {
-                var y = ((p.Y - min) / range) - 0.5d;
-                PredictedPoints.Add(
-                    DrawPoint(new Point(p.X, y), 4.0d, brush: Brushes.Red));
+                network.Randomize();
+                generations = 0;
             }
-
-            sw.Stop();
-            System.Diagnostics.Debug.WriteLine(sw.Elapsed.ToString());
         }
     }
 }
