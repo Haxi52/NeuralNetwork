@@ -8,12 +8,8 @@ namespace NeuralNetworkVisualizer.Network
 {
     internal class DenseLayer : ILayer
     {
-        private const double evolutionRate = 0.001d;
-        
         private readonly double[] biases;
         private readonly double[] weights;
-        private readonly double[] evolutionWeightsCache;
-        private readonly double[] evolutionBiasesCache;
 
         public int Size { get; }
         public int InputSize { get; }
@@ -25,20 +21,17 @@ namespace NeuralNetworkVisualizer.Network
 
             biases = new double[size];
             weights = new double[size * inputs];
-
-            evolutionBiasesCache = new double[biases.Length];
-            evolutionWeightsCache = new double[weights.Length];
         }
 
-        public double[] Forward(Span<double> input)
+        public double[] Forward(double[] input)
         {
             var output = new double[Size];
             Array.Copy(biases, output, Size);
 
             var i = 0;
-            for (var k = 0; k < input.Length; k++)
+            for (var j = 0; j < Size; j++)
             {
-                for (var j = 0; j < Size; j++)
+                for (var k = 0; k < input.Length; k++)
                 {
                     output[j] += weights[i++] * input[k];
                 }
@@ -61,29 +54,30 @@ namespace NeuralNetworkVisualizer.Network
             }
         }
 
-        public void Evolve(double cost)
+        public double[] Learn(double[] input, double[] expected, double rate)
         {
-            Array.Copy(weights, evolutionWeightsCache, weights.Length); 
-            Array.Copy(biases, evolutionBiasesCache, biases.Length);
+            var output = new double[InputSize];
+            var m = 1 / InputSize;
 
-            var rng = new Random((int)DateTime.Now.Ticks);
-            var localRate = evolutionRate;
-
-            for (var i = 0; i < biases.Length; i++)
+            var i = 0;
+            for (var j = 0; j < Size; j++)
             {
-                biases[i] += (rng.NextDouble() * localRate) - (localRate * 0.5d);
+                var sumActual = 0d;
+                for (var k = 0; k < input.Length; k++)
+                {
+                    var actual = weights[i] * input[k];
+                    var delta = actual - expected[j];
+                    weights[i] -= delta * rate * m;
+
+                    output[k] += weights[i] * expected[j];
+                    sumActual += delta;
+                    i++;
+                }
+
+                biases[j] -= sumActual * rate * m;  
             }
 
-            for (var i = 0; i < weights.Length; i++)
-            {
-                weights[i] += (rng.NextDouble() * localRate) - (localRate * 0.5d);
-            }
-        }
-
-        public void Discard()
-        {
-            Array.Copy(evolutionWeightsCache, weights, weights.Length);
-            Array.Copy(evolutionBiasesCache, biases, biases.Length);
+            return output;
         }
     }
 }

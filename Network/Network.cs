@@ -46,62 +46,32 @@ internal class Network
     }
 
 
-    public double Learn(double[] inputs, double[] expected)
+    public double Learn(double[] input, double[] expected, double rate)
     {
-        var output = new double[inputs.Length];
-        ProcessBatch(inputs, output);
-        double cost = Cost(expected, output);
-        var maxEpoc = 50;
+        var cache = new List<double[]>();
 
-        while (maxEpoc-- > 0)
+        for (var i = 0; i < input.Length; i++)
         {
-            for (var i = layers.Count - 1; i >= 0; i--)
+            var result = new[] { input[i] };
+            foreach (var layer in layers)
             {
-                layers[i].Evolve(cost);
+                cache.Add(result);
+                result = layer.Forward(result);
             }
 
-            ProcessBatch(inputs, output);
-            double cost2 = Cost(expected, output);
-
-            if (cost2 > cost)
+            var e = new[] { expected[i] };
+            foreach (var layer in layers)
             {
-                maxEpoc--; // extra penaltiy if its worse
-                for (var i = layers.Count - 1; i >= 0; i--)
-                {
-                    layers[i].Discard();
-                }
+                result = cache.Last();
+                cache.Remove(result);
+                e = layer.Learn(e, result, rate);
             }
-            else
-            {
-                cost = cost2;
-            }
+            cache.Clear();
         }
 
-        return cost;
+        return 0d;
     }
 
-    private void ProcessBatch(double[] inputs, double[] outputs)
-    {
-
-        var batchSize = inputs.Length / Environment.ProcessorCount;
-        var products = new List<(int start, int end)>();
-        var i = 0;
-        while (i < inputs.Length)
-        {
-            var start = i;
-            var end = Math.Min(i + batchSize, inputs.Length);
-            products.Add((start, end));
-            i = end;
-        }
-
-        Parallel.ForEach(products, job =>
-        {
-            for (var k = job.start; k < job.end; k++)
-            {
-                outputs[k] = Process(new[] { inputs[k] })[0];
-            }
-        });
-    }
 
     public void Randomize()
     {

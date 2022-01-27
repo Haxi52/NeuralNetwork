@@ -25,7 +25,7 @@ internal class ActivationLayer : ILayer
         this.activationType = activationType;
     }
 
-    public double[] Forward(Span<double> input)
+    public double[] Forward(double[] input)
     {
         var output = new double[input.Length];
 
@@ -78,13 +78,9 @@ internal class ActivationLayer : ILayer
 
     public void Randomize(int? seed = null) { }
 
-    public void Evolve(double cost)
-    {
-        
-    }
 
-    public void Discard()
+    public double[] Learn(double[] input, double[] expected, double rate)
     {
-        
+        return input;
     }
 }

@@ -10,8 +10,7 @@ namespace NeuralNetworkVisualizer.Network;
 internal interface ILayer
 {
     int Size { get; }
-    double[] Forward(Span<double> input);
-    void Evolve(double rate);
-    void Discard();
+    double[] Forward(double[] input);
+    double[] Learn(double[] input, double[] expected, double rate);
     void Randomize(int? seed = null);
 }
