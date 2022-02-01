@@ -95,16 +95,15 @@ namespace NeuralNetworkVisualizer
             {
                 for (double i = -1; i <= 1d; i += 0.001d)
                 {
-                    predictions.Add(new Point(i, network.Process(new[] { i })[0]));
+                    var input = Pool.Instance.Borrow(1);
+                    input[0] = i;
+                    predictions.Add(new Point(i, network.Process(input)[0]));
                 }
             }
             sw.Stop();
 
-            Debug.WriteLine($"Predict and draw: {System.Threading.Thread.CurrentThread.ManagedThreadId}");
-
             await Dispatcher.InvokeAsync(() =>
             {
-                Debug.WriteLine($"Update UI: {System.Threading.Thread.CurrentThread.ManagedThreadId}");
                 foreach (var element in PredictedPoints)
                 {
                     Canvas.Children.Remove(element);
@@ -117,7 +116,7 @@ namespace NeuralNetworkVisualizer
                         DrawPoint(new Point(p.X, p.Y), 4.0d, brush: Brushes.Red));
                 }
 
-                StatusText.Text = $"G: {generations} C: {cost:.000000}   P: {sw.Elapsed.Ticks}";
+                StatusText.Text = $"G: {generations} C: {cost:.000000}   T: {sw.Elapsed.Ticks}  P:{Pool.Instance.Count}";
             });
 
         }
@@ -143,7 +142,7 @@ namespace NeuralNetworkVisualizer
                 int epoc = 0;
                 while (sw.Elapsed < TimeSpan.FromSeconds(2) && isLearning)
                 {
-                    cost = network.Learn(inputs, expected, 0.01d);
+                    cost = network.Learn(inputs, expected, 0.02d);
                     generations++;
                     epoc++;
                 }

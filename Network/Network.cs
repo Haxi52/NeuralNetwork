@@ -39,7 +39,9 @@ internal class Network
         var result = inputs;
         foreach (var layer in layers)
         {
-            result = layer.Forward(result);
+            var input = result;
+            result = layer.Forward(input);
+            Pool.Instance.Return(input);
         }
 
         return result;

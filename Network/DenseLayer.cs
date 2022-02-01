@@ -36,8 +36,6 @@ namespace NeuralNetworkVisualizer.Network
                     output[j] += weights[i++] * input[k];
                 }
             }
-
-            Pool.Instance.Return(input);
             return output;
         }
 

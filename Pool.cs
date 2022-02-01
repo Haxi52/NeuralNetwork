@@ -13,23 +13,22 @@ namespace NeuralNetworkVisualizer
         public static Pool Instance => instance;
         private Pool() { }
 
-        private readonly ConcurrentDictionary<int, Queue<double[]>> pool = new();
-        private readonly ConcurrentBag<double[]> borrowed = new();
+        private readonly ConcurrentDictionary<int, Stack<double[]>> pool = new();
+
+        public int Count => pool[16]?.Count ?? 0;
 
         public double[] Borrow(int size)
         {
-            var queue = pool.GetOrAdd(size, i => new Queue<double[]>());
+            var queue = pool.GetOrAdd(size, i => new Stack<double[]>());
 
-            if (queue.TryDequeue(out var value)) return value;
-            var result = new double[size];
-            borrowed.Add(result);
-            return result;
+            if (queue.TryPop(out var value)) return value;
+            return new double[size];
         }
 
         public void Return(double[] obj)
         {
-            var queue = pool.GetOrAdd(obj.Length, i => new Queue<double[]>());
-            queue.Enqueue(obj);
+            var queue = pool.GetOrAdd(obj.Length, i => new Stack<double[]>());
+            queue.Push(obj);
         }
     }
 }

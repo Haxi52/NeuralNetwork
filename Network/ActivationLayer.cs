@@ -27,7 +27,7 @@ internal class ActivationLayer : ILayer
 
     public double[] Forward(double[] input)
     {
-        var output = new double[input.Length];
+        var output = Pool.Instance.Borrow(input.Length);
 
         for (var i = 0; i < input.Length; i++)
         {
