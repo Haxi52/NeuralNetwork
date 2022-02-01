@@ -25,7 +25,7 @@ namespace NeuralNetworkVisualizer.Network
 
         public double[] Forward(double[] input)
         {
-            var output = new double[Size];
+            var output = Pool.Instance.Borrow(Size);
             Array.Copy(biases, output, Size);
 
             var i = 0;
@@ -37,6 +37,7 @@ namespace NeuralNetworkVisualizer.Network
                 }
             }
 
+            Pool.Instance.Return(input);
             return output;
         }
 
@@ -56,7 +57,7 @@ namespace NeuralNetworkVisualizer.Network
 
         public double[] Learn(double[] input, double[] expected, double rate)
         {
-            var output = new double[InputSize];
+            var output = Pool.Instance.Borrow(InputSize);
             var m = 1 / InputSize;
 
             var i = 0;
@@ -77,6 +78,8 @@ namespace NeuralNetworkVisualizer.Network
                 biases[j] -= sumActual * rate * m;  
             }
 
+            Pool.Instance.Return(input);
+            
             return output;
         }
     }

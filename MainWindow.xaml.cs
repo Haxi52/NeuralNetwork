@@ -117,10 +117,9 @@ namespace NeuralNetworkVisualizer
                         DrawPoint(new Point(p.X, p.Y), 4.0d, brush: Brushes.Red));
                 }
 
-                StatusText.Text = $"Generations: {generations}     Cost: {cost:.000000}   Process Time: {sw.Elapsed}";
+                StatusText.Text = $"G: {generations} C: {cost:.000000}   P: {sw.Elapsed.Ticks}";
             });
 
-            //statusText = $"Generations: {generations}     Cost: {cost}   Process Time: {sw.Elapsed}";
         }
 
         private async Task Learn()
@@ -128,7 +127,7 @@ namespace NeuralNetworkVisualizer
             var inputsList = new List<double>();
             var expectedList = new List<double>();
 
-            for (double i = -1; i <= 1d; i += 0.001d)
+            for (double i = -1; i <= 1d; i += 0.002d)
             {
                 inputsList.Add(i);
                 expectedList.Add(Fit(i));

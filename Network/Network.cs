@@ -30,13 +30,13 @@ internal class Network
         return this;
     }
 
-    public double[] Process(ReadOnlySpan<double> inputs)
+    public double[] Process(double[] inputs)
     {
         if (inputs == null) throw new ArgumentNullException(nameof(inputs));
         if (inputs.Length != inputCount) throw new ArgumentOutOfRangeException(nameof(inputs));
 
 
-        var result = inputs.ToArray();
+        var result = inputs;
         foreach (var layer in layers)
         {
             result = layer.Forward(result);
@@ -52,20 +52,27 @@ internal class Network
 
         for (var i = 0; i < input.Length; i++)
         {
-            var result = new[] { input[i] };
+
+            var result = Pool.Instance.Borrow(1);
+            result[0] = input[i];
+
             foreach (var layer in layers)
             {
                 cache.Add(result);
                 result = layer.Forward(result);
             }
+            Pool.Instance.Return(result);
 
-            var e = new[] { expected[i] };
+            var e = Pool.Instance.Borrow(1); 
+            e[0] = expected[i];
             foreach (var layer in layers)
             {
                 result = cache.Last();
                 cache.Remove(result);
                 e = layer.Learn(e, result, rate);
+                Pool.Instance.Return(result);
             }
+            Pool.Instance.Return(e);
             cache.Clear();
         }
 
