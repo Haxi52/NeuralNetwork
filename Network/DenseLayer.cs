@@ -10,13 +10,15 @@ namespace NeuralNetworkVisualizer.Network
     {
         private readonly double[] biases;
         private readonly double[] weights;
+        private readonly IActivation activation;
 
         public int Size { get; }
         public int InputSize { get; }
 
-        public DenseLayer(int inputs, int size)
+        public DenseLayer(int inputs, int size, IActivation activation)
         {
             Size = size;
+            this.activation = activation;
             InputSize = inputs;
 
             biases = new double[size];
@@ -36,7 +38,8 @@ namespace NeuralNetworkVisualizer.Network
                     output[j] += weights[i++] * input[k];
                 }
             }
-            return output;
+
+            return activation.Forward(output);
         }
 
         public void Randomize(int? seed = null)
@@ -53,32 +56,37 @@ namespace NeuralNetworkVisualizer.Network
             }
         }
 
-        public double[] Learn(double[] input, double[] expected, double rate)
+
+        public double[] Learn(double[] input, // input from previous layer
+                              double[] expected, // expected output given the inputs, 
+                              double rate) // how fast to move the weights/biases to improve the cost
         {
+            var actual = Forward(input);
             var output = Pool.Instance.Borrow(InputSize);
-            var m = 1 / InputSize;
 
             var i = 0;
-            for (var j = 0; j < Size; j++)
+            for (var j = 0; j < Size; j++) // for each neuron
             {
-                var sumActual = 0d;
-                for (var k = 0; k < input.Length; k++)
+                var dCost_dActual = actual[j] - expected[j];   
+                var dActual_dZ = actual[j] * (1 - actual[j]);
+                var nError = dCost_dActual * dActual_dZ;
+
+                biases[j] += nError * rate;
+                for (var k = 0; k < input.Length; k++) // for each weight
                 {
-                    var actual = weights[i] * input[k];
-                    var delta = actual - expected[j];
-                    weights[i] -= delta * rate * m;
+                    var delta = nError * input[k];  
+                    weights[i] += delta * rate;
 
                     output[k] += weights[i] * expected[j];
-                    sumActual += delta;
                     i++;
                 }
 
-                biases[j] -= sumActual * rate * m;  
             }
 
-            Pool.Instance.Return(input);
-            
-            return output;
+            Pool.Instance.Return(expected);
+            Pool.Instance.Return(actual);
+
+            return activation.Forward(output);
         }
     }
 }

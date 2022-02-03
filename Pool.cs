@@ -15,7 +15,7 @@ namespace NeuralNetworkVisualizer
 
         private readonly ConcurrentDictionary<int, Stack<double[]>> pool = new();
 
-        public int Count => pool[16]?.Count ?? 0;
+        public int Count => pool.Sum(i => i.Value.Count);
 
         public double[] Borrow(int size)
         {

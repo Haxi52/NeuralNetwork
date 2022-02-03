@@ -16,17 +16,20 @@ internal class Network
         this.inputCount = inputCount;
     }
 
-    public Network AddDenseLayer(int size)
+    public Network AddLayer(int size, ActivationType activationType)
     {
         var input = layers.LastOrDefault()?.Size ?? inputCount;
 
-        layers.Add(new DenseLayer(input, size));
-        return this;
-    }
+        IActivation activation = activationType switch
+        {
+            ActivationType.None => new NoActivation(),
+            ActivationType.ReLU => new ReLUActivation(),
+            ActivationType.Softmax => new SoftmaxActivation(),
+            ActivationType.Sigmoid => new SigmoidActivation(),
+            _ => throw new Exception(),
+        };
 
-    public Network AddActivationLayer(ActivationType activationType)
-    {
-        layers.Add(new ActivationLayer(layers.Last().Size, activationType));
+        layers.Add(new DenseLayer(input, size, activation));
         return this;
     }
 
@@ -48,14 +51,14 @@ internal class Network
     }
 
 
-    public double Learn(double[] input, double[] expected, double rate)
+    public double Learn(double[] input, double[] expectedSet, double rate)
     {
         var cache = new List<double[]>();
 
-        for (var i = 0; i < input.Length; i++)
+        for (var i = 0; i < input.Length; i++) // foreach training instance
         {
 
-            var result = Pool.Instance.Borrow(1);
+            var result = Pool.Instance.Borrow(inputCount);
             result[0] = input[i];
 
             foreach (var layer in layers)
@@ -65,20 +68,22 @@ internal class Network
             }
             Pool.Instance.Return(result);
 
-            var e = Pool.Instance.Borrow(1); 
-            e[0] = expected[i];
-            foreach (var layer in layers)
+            var expected = Pool.Instance.Borrow(layers.Last().Size);
+            expected[0] = expectedSet[i];
+
+            for (var lIndex = layers.Count - 1; lIndex >= 0; lIndex--)
             {
-                result = cache.Last();
-                cache.Remove(result);
-                e = layer.Learn(e, result, rate);
-                Pool.Instance.Return(result);
+                var layer = layers[lIndex];
+                var actual = cache.Last();
+                cache.Remove(actual);
+                expected = layer.Learn(actual, expected, rate);
+                Pool.Instance.Return(actual);
             }
-            Pool.Instance.Return(e);
+            Pool.Instance.Return(expected);
             cache.Clear();
         }
 
-        return 0d;
+        return Cost(expectedSet, input);
     }
 
 

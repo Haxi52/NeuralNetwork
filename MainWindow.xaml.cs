@@ -48,11 +48,9 @@ namespace NeuralNetworkVisualizer
             };
 
             network = new Network.Network(1)
-                .AddDenseLayer(16)
-                .AddActivationLayer(Network.ActivationType.ReLU)
-                .AddDenseLayer(16)
-                .AddActivationLayer(Network.ActivationType.Softmax)
-                .AddDenseLayer(1);
+                .AddLayer(16, Network.ActivationType.Sigmoid)
+                .AddLayer(16, Network.ActivationType.Sigmoid)
+                .AddLayer(1, Network.ActivationType.Sigmoid);
 
             network.Randomize();
         }
@@ -116,7 +114,7 @@ namespace NeuralNetworkVisualizer
                         DrawPoint(new Point(p.X, p.Y), 4.0d, brush: Brushes.Red));
                 }
 
-                StatusText.Text = $"G: {generations} C: {cost:.000000}   T: {sw.Elapsed.Ticks}  P:{Pool.Instance.Count}";
+                StatusText.Text = $"G: {generations} C: {cost:0.000000}   T: {sw.Elapsed.Ticks}  P:{Pool.Instance.Count}";
             });
 
         }
@@ -142,7 +140,7 @@ namespace NeuralNetworkVisualizer
                 int epoc = 0;
                 while (sw.Elapsed < TimeSpan.FromSeconds(2) && isLearning)
                 {
-                    cost = network.Learn(inputs, expected, 0.02d);
+                    cost = network.Learn(inputs, expected, 0.005d);
                     generations++;
                     epoc++;
                 }
