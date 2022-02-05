@@ -51,45 +51,51 @@ public class Network
     }
 
 
-    public double Learn(double[][] input, double[][] expectedSet, double rate)
+    public double Learn(double[][] inputSet, double[][] expectedSet, double rate)
     {
         var cache = new List<double[]>();
         var cost = 0d;
 
-        for (var i = 0; i < input.Length; i++) // foreach training instance
+        for (var set = 0; set < inputSet.Length; set++) // foreach training instance
         {
+            var input = inputSet[set];
+            var expected = expectedSet[set];    
 
-            var result = Pool.Instance.Borrow(inputCount);
-            Array.Copy(input[i], result, inputCount);
-
-            foreach (var layer in layers)
+            for (var i = 0; i < input.Length; i++) 
             {
-                cache.Add(result);
-                result = layer.Forward(result);
+
+                var foward = Pool.Instance.Borrow(inputCount);
+                Array.Copy(input, foward, inputCount);
+
+                foreach (var layer in layers)
+                {
+                    cache.Add(foward);
+                    foward = layer.Forward(foward);
+                }
+
+                var learn = Pool.Instance.Borrow(layers.Last().Size);
+                Array.Copy(expected, learn, expected.Length);
+
+                if (cost == 0d)
+                    cost = Cost(learn, foward);
+                else
+                    cost = (cost + Cost(learn, foward)) * 0.5d;
+
+                Pool.Instance.Return(foward);
+
+                for (var lIndex = layers.Count - 1; lIndex >= 0; lIndex--)
+                {
+                    var layer = layers[lIndex];
+                    var actual = cache.Last();
+                    cache.Remove(actual);
+                    learn = layer.Learn(actual, learn, rate);
+                    Pool.Instance.Return(actual);
+                }
+                Pool.Instance.Return(learn);
             }
-
-            var expected = Pool.Instance.Borrow(layers.Last().Size);
-            Array.Copy(expectedSet[i], expected, expected.Length);
-
-            if (cost == 0d) 
-                cost = Cost(expected, result);
-            else
-                cost = (cost + Cost(expected, result)) * 0.5d;
-
-            Pool.Instance.Return(result);
-
-            for (var lIndex = layers.Count - 1; lIndex >= 0; lIndex--)
-            {
-                var layer = layers[lIndex];
-                var actual = cache.Last();
-                cache.Remove(actual);
-                expected = layer.Learn(actual, expected, rate);
-                Pool.Instance.Return(actual);
-            }
-            Pool.Instance.Return(expected);
         }
-        
-        return cost;    
+
+        return cost;
     }
 
 

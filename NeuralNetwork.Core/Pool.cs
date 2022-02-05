@@ -19,15 +19,15 @@ internal class Pool
 
     public double[] Borrow(int size)
     {
-        var queue = pool.GetOrAdd(size, i => new Stack<double[]>());
+       // var queue = pool.GetOrAdd(size, i => new Stack<double[]>());
 
-        if (queue.TryPop(out var value)) return value;
+       // if (queue.TryPop(out var value)) return value;
         return new double[size];
     }
 
     public void Return(double[] obj)
     {
-        var queue = pool.GetOrAdd(obj.Length, i => new Stack<double[]>());
-        queue.Push(obj);
+     //   var queue = pool.GetOrAdd(obj.Length, i => new Stack<double[]>());
+     //   queue.Push(obj);
     }
 }

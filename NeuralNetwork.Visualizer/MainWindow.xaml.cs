@@ -139,7 +139,7 @@ namespace NeuralNetworkVisualizer
                 int epoc = 0;
                 while (sw.Elapsed < TimeSpan.FromSeconds(2) && isLearning)
                 {
-                    cost = network.Learn(inputs, expected, 0.00005d);
+                    cost = network.Learn(new[] { inputs }, new[] { expected }, 0.00005d);
                     generations++;
                     epoc++;
                 }

@@ -72,13 +72,13 @@ internal class DenseLayer : ILayer
             {
                 var actual = weights[i] * input[k];
                 var delta = actual - expected[j];
-                weights[i] += delta * m;
+                weights[i] -= delta * m;
 
                 output[k] += weights[i] * expected[j];
                 sumActual += delta;
                 i++;
             }
-            biases[j] += sumActual * m;
+            biases[j] -= sumActual * m;
 
         }
 
