@@ -1,0 +1,40 @@
+﻿L = Layer
+y = actual 
+c = loss function
+w = weight
+z = input node
+g = activation function
+a = output node
+j = current node index
+k = preview node index
+m = number of input node
+
+- cost
+	-(1/m) * sum(y[j] * log(a[k]))
+
+- loss
+ =Sum of=
+ (a[j] - y[j]) ^ 2
+
+- input
+  l.w[j/k] * (l-1).a[k]
+
+- activation
+a[j] = l.g * (l.z[j])
+
+- differentiate the loss for a single node/weight
+  
+  2 * (a[j] - y[j]) * (gPrime(z[j])) * ((l-1).a[k])
+
+- for layers not the last
+	
+=======================
+
+dz2 = (a2 - y)
+dw2 = (1/m) * dot(dz2, a1)
+db2 = (1/m) * sum(dz2)
+
+
+dz1 = (1/m) * dot(w2, dz2) * gPrime(a1)
+dw1 = (1/m) * dot(dz1, x)
+db1 = (1/m) * sum(dz1)
