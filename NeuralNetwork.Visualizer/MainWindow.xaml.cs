@@ -49,9 +49,9 @@ namespace NeuralNetworkVisualizer
             };
 
             network = new Network(1)
-                .AddLayer(16, ActivationType.Sigmoid)
-                .AddLayer(16, ActivationType.Sigmoid)
-                .AddLayer(1, ActivationType.Sigmoid);
+                .AddLayer(16, ActivationType.ReLU)
+                .AddLayer(16, ActivationType.Softmax)
+                .AddLayer(1, ActivationType.None);
 
             network.Randomize();
         }
@@ -92,9 +92,11 @@ namespace NeuralNetworkVisualizer
 
             lock (network)
             {
+                var input = new[] { 0d };
                 for (double i = -1; i <= 1d; i += 0.001d)
                 {
-                    predictions.Add(new Point(i, network.Process(new [] { i })[0]));
+                    input[0] = i;
+                    predictions.Add(new Point(i, network.Process(input)[0]));
                 }
             }
             sw.Stop();
@@ -113,20 +115,20 @@ namespace NeuralNetworkVisualizer
                         DrawPoint(new Point(p.X, p.Y), 4.0d, brush: Brushes.Red));
                 }
 
-                StatusText.Text = $"G: {generations} C: {cost:0.000000}   T: {sw.Elapsed.Ticks}";
+                StatusText.Text = $"G: {generations}  C: {cost:0.000000}  T: {sw.Elapsed.Ticks}";
             });
 
         }
 
         private async Task Learn()
         {
-            var inputsList = new List<double>();
-            var expectedList = new List<double>();
+            var inputsList = new List<double[]>();
+            var expectedList = new List<double[]>();
 
             for (double i = -1; i <= 1d; i += 0.002d)
             {
-                inputsList.Add(i);
-                expectedList.Add(Fit(i));
+                inputsList.Add(new[] { i });
+                expectedList.Add(new[] { Fit(i) });
             }
 
             var inputs = inputsList.ToArray();
@@ -139,7 +141,7 @@ namespace NeuralNetworkVisualizer
                 int epoc = 0;
                 while (sw.Elapsed < TimeSpan.FromSeconds(2) && isLearning)
                 {
-                    cost = network.Learn(new[] { inputs }, new[] { expected }, 0.00005d);
+                    cost = network.Learn(inputs, expected, 0.5d);
                     generations++;
                     epoc++;
                 }

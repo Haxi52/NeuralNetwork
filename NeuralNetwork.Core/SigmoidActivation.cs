@@ -16,5 +16,6 @@ internal class SigmoidActivation : IActivation
         }
         return input;
     }
+    public double Activate(double input) => 1d / (1d + Math.Pow(Math.E, -input));
 }
 

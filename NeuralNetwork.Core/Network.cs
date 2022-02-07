@@ -11,6 +11,8 @@ public class Network
     private readonly List<ILayer> layers = new();
     private readonly int inputCount;
 
+    public IEnumerable<ILayer> Layers => layers;
+
     public Network(int inputCount)
     {
         this.inputCount = inputCount;
@@ -53,35 +55,32 @@ public class Network
 
     public double Learn(double[][] inputSet, double[][] expectedSet, double rate)
     {
-        var cache = new List<double[]>();
-        var cost = 0d;
+        var cache = new List<double[]>(inputSet.First().Length);
+        var actualSet = new double[inputSet.Length][]; //new List<double[]>(inputSet.Length);
 
         for (var set = 0; set < inputSet.Length; set++) // foreach training instance
         {
             var input = inputSet[set];
-            var expected = expectedSet[set];    
+            var expected = expectedSet[set];
 
-            for (var i = 0; i < input.Length; i++) 
+            for (var i = 0; i < input.Length; i++)
             {
 
-                var foward = Pool.Instance.Borrow(inputCount);
-                Array.Copy(input, foward, inputCount);
+                var forward = Pool.Instance.Borrow(inputCount);
+                Array.Copy(input, forward, inputCount);
 
                 foreach (var layer in layers)
                 {
-                    cache.Add(foward);
-                    foward = layer.Forward(foward);
+                    cache.Add(forward);
+                    forward = layer.Forward(forward);
                 }
+                actualSet[set] = forward;
 
                 var learn = Pool.Instance.Borrow(layers.Last().Size);
                 Array.Copy(expected, learn, expected.Length);
 
-                if (cost == 0d)
-                    cost = Cost(learn, foward);
-                else
-                    cost = (cost + Cost(learn, foward)) * 0.5d;
 
-                Pool.Instance.Return(foward);
+                Pool.Instance.Return(forward);
 
                 for (var lIndex = layers.Count - 1; lIndex >= 0; lIndex--)
                 {
@@ -95,7 +94,7 @@ public class Network
             }
         }
 
-        return cost;
+        return Cost(expectedSet, actualSet);
     }
 
 
@@ -108,18 +107,22 @@ public class Network
     }
 
 
-    private static double Cost(ReadOnlySpan<double> expected, ReadOnlySpan<double> actual)
+    private static double Cost(ReadOnlySpan<double[]> expected, ReadOnlySpan<double[]> actual)
     {
         if (expected == null) throw new ArgumentNullException(nameof(expected));
         if (actual == null) throw new ArgumentNullException(nameof(actual));
 
-        double result = 0d;
-        for (var i = 0; i < expected.Length; i++)
+        var result = Math.Pow(expected[0][0] - actual[0][0], 2);
+
+        for (var set = 0; set < expected.Length; set++)
         {
-            result += Math.Pow(expected[i] - actual[i], 2);
+            for(var i = 0; i < expected[set].Length; i++)
+            {
+                result = (result + Math.Pow(expected[set][i] - actual[set][i], 2)) * 0.5d;
+            }
         }
 
-        return result / expected.Length;
+        return result;
     }
 }
 

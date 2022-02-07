@@ -8,8 +8,6 @@ namespace NeuralNetwork.Core;
 
 internal class NoActivation : IActivation
 {
-    public double[] Forward(double[] input)
-    {
-        return input;
-    }
+    public double[] Forward(double[] input) => input;
+    public double Activate(double input) => input;
 }

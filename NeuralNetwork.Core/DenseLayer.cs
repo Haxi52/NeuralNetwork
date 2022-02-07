@@ -57,33 +57,91 @@ internal class DenseLayer : ILayer
     }
 
 
+
     public double[] Learn(double[] input, // input from previous layer
                           double[] expected, // expected output given the inputs, 
                           double rate) // how fast to move the weights/biases to improve the cost
     {
         var output = Pool.Instance.Borrow(InputSize);
-        var m = (1.0d / InputSize) * rate;
+        //var m = (1.0d / InputSize) * rate;
+        var m = rate;
 
         var i = 0;
-        for (var j = 0; j < Size; j++) // for each neuron
+        for (var j = 0; j < Size; j++) // for each neuron in this layer
         {
-            var sumActual = 0d;
-            for (var k = 0; k < input.Length; k++) // for each weight
+            var actual = biases[j];
+            for (var k = 0; k < input.Length; k++) // for each input neuron
             {
-                var actual = weights[i] * input[k];
-                var delta = actual - expected[j];
-                weights[i] -= delta * m;
+                actual += (weights[i + k] * input[k]);
+            }
+            actual = activation.Activate(actual);
 
+            var deltaCost = (actual - expected[j]);// * actual * (1 - actual);
+                
+            biases[j] -= deltaCost * m;
+            for (var k = 0; k < input.Length; k++) // for each input neuron
+            {
+                var delta = deltaCost * input[k];
+                weights[i] -= delta * m;
                 output[k] += weights[i] * expected[j];
-                sumActual += delta;
                 i++;
             }
-            biases[j] -= sumActual * m;
-
         }
 
         Pool.Instance.Return(expected);
 
         return output;
+    }
+
+
+    //public double[] Learn(double[] input, // input from previous layer
+    //                      double[] expected, // expected output given the inputs, 
+    //                      double rate) // how fast to move the weights/biases to improve the cost
+    //{
+    //    var output = Pool.Instance.Borrow(InputSize);
+    //    var m = (1.0d / InputSize) * rate;
+
+    //    var i = 0;
+    //    for (var j = 0; j < Size; j++) // for each neuron
+    //    {
+    //        var sumActual = 0d;
+    //        for (var k = 0; k < input.Length; k++) // for each weight
+    //        {
+    //            var actual = activation.Activate(weights[i] * input[k]);
+    //            var delta = actual - expected[j];
+    //            weights[i] -= delta * m;
+
+    //            output[k] += weights[i] * expected[j];
+    //            sumActual += delta;
+    //            i++;
+    //        }
+    //        // biases[j] -= sumActual * m;
+
+    //    }
+
+    //    Pool.Instance.Return(expected);
+
+    //    return output;
+    //}
+
+    public override string ToString()
+    {
+        var output = new StringBuilder();
+        var w = 0;
+        for(var n = 0; n < Size; n++)
+        {
+            for (var j =0; j < InputSize; j++)
+            {
+                output.Append($"|w{n},{j}({weights[w]:0.000})|");
+                w++;
+            }
+        }
+        output.AppendLine();
+        for (var n = 0; n < Size; n++)
+        {
+            output.Append($"|b{n}({biases[n]:0.000})|");
+        }
+
+        return output.ToString();
     }
 }

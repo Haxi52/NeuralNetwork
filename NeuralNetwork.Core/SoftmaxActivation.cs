@@ -28,4 +28,6 @@ internal class SoftmaxActivation : IActivation
 
         return input;
     }
+
+    public double Activate(double input) => input;
 }

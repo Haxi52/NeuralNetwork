@@ -16,5 +16,7 @@ internal class ReLUActivation : IActivation
         }
         return input;
     }
+
+    public double Activate(double input) => Math.Max(0, input);
 }
 
