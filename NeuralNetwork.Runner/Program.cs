@@ -8,7 +8,8 @@ Console.WriteLine("Hello, World!");
 
 var generations = 0;
 var network = new Network(2);
-network.AddLayer(2, ActivationType.Softmax);
+network.AddLayer(2, ActivationType.None);
+network.AddLayer(2, ActivationType.None);
 network.AddLayer(2, ActivationType.None);
 network.Randomize();
 
@@ -26,7 +27,7 @@ var expectedSet = new[]
     //new[] { 1d, 1d, },
     new[] { 0d, 1d, },
     new[] { 1d, 0d, },
-    //new[] { 0d, 0d, },
+   // new[] { 0d, 0d, },
 };
 
 var result = network.Process(inputSet[0]);
@@ -37,8 +38,8 @@ Console.WriteLine($"first: {string.Join(", ", result.Select(i => $"{i:0.0000}"))
 
 Console.WriteLine();
 
-// LearnALot();
-LoopInteractive();
+ LearnALot();
+// LoopInteractive();
 
 
 void LoopInteractive()
@@ -52,7 +53,7 @@ void LoopInteractive()
 
     while (Console.ReadKey().Key != ConsoleKey.Escape)
     {
-        var cost = network.Learn(inputSet, expectedSet, 0.005d);
+        var cost = network.Learn(inputSet, expectedSet, 0.05d);
         generations++;
         var result2 = network.Process(inputSet[0]);
         Console.WriteLine($"after: {string.Join(", ", result2.Select(i => $"{i:0.0000}"))} | cost: {cost:0.000000} | gen: {generations}");
@@ -68,13 +69,13 @@ void LoopInteractive()
 
 void LearnALot()
 {
-    var cost = network.Learn(inputSet, expectedSet, 0.005d);
+    var cost = 0d;
 
     for (var k = 0; k < 100; k++)
     {
-        for (var i = 0; i < 10000; i++)
+        for (var i = 0; i < 1000; i++)
         {
-            cost = network.Learn(inputSet, expectedSet, 0.005d);
+            cost = network.Learn(inputSet, expectedSet, 0.0005d);
             generations++;
         }
         var result2 = network.Process(inputSet[0]);

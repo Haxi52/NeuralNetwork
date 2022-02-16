@@ -63,8 +63,7 @@ internal class DenseLayer : ILayer
                           double rate) // how fast to move the weights/biases to improve the cost
     {
         var output = Pool.Instance.Borrow(InputSize);
-        //var m = (1.0d / InputSize) * rate;
-        var m = rate;
+        var m = (1.0d / InputSize) * rate;
 
         var i = 0;
         for (var j = 0; j < Size; j++) // for each neuron in this layer
@@ -83,7 +82,7 @@ internal class DenseLayer : ILayer
             {
                 var delta = deltaCost * input[k];
                 weights[i] -= delta * m;
-                output[k] += weights[i] * expected[j];
+                output[k] += weights[i] * deltaCost * m;
                 i++;
             }
         }
