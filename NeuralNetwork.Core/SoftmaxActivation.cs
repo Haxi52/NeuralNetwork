@@ -8,25 +8,28 @@ namespace NeuralNetwork.Core;
 
 internal class SoftmaxActivation : IActivation
 {
-    public double[] Forward(double[] input)
+    public double[] Forward(NetworkContext ctx, int index)
     {
+        var input = ctx.LayerOutput[index];
+        var output = ctx.LayerActivated[index];
+
         for (var i = 0; i < input.Length; i++)
         {
-            input[i] = Math.Exp(input[i]);
+            output[i] = Math.Exp(input[i]);
         }
 
         var sum = .0d;
-        for (var i = 0; i < input.Length; i++)
+        for (var i = 0; i < output.Length; i++)
         {
-            sum += input[i];
+            sum += output[i];
         }
 
         for (var i = 0; i < input.Length; i++)
         {
-            input[i] = (input[i] / sum);
+            output[i] = (output[i] / sum);
         }
 
-        return input;
+        return output;
     }
 
     public double Activate(double input) => input;

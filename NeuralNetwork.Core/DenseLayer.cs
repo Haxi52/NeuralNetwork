@@ -10,24 +10,27 @@ internal class DenseLayer : ILayer
 {
     private readonly double[] biases;
     private readonly double[] weights;
+    private readonly int index;
     private readonly IActivation activation;
 
     public int Size { get; }
     public int InputSize { get; }
 
-    public DenseLayer(int inputs, int size, IActivation activation)
+    public DenseLayer(int index, int inputs, int size, IActivation activation)
     {
         Size = size;
         this.activation = activation;
+        this.index = index;
         InputSize = inputs;
 
         biases = new double[size];
         weights = new double[size * inputs];
     }
 
-    public double[] Forward(double[] input)
+    public double[] Forward(NetworkContext ctx)
     {
-        var output = Pool.Instance.Borrow(Size);
+        var input = ctx.LayerOutput[index - 1];
+        var output = ctx.LayerOutput[index];
         Array.Copy(biases, output, Size);
 
         var i = 0;
@@ -39,7 +42,7 @@ internal class DenseLayer : ILayer
             }
         }
 
-        return activation.Forward(output);
+        return activation.Forward(ctx, index);
     }
 
     public void Randomize(int? seed = null)
@@ -58,25 +61,20 @@ internal class DenseLayer : ILayer
 
 
 
-    public double[] Learn(double[] input, // input from previous layer
-                          double[] expected, // expected output given the inputs, 
+    public double[] Learn(NetworkContext ctx,
                           double rate) // how fast to move the weights/biases to improve the cost
     {
-        var output = Pool.Instance.Borrow(InputSize);
-        var m = (1.0d / InputSize) * rate;
+        var input = ctx.LayerActivated[index - 1];
+        var output = ctx.Expected[index - 1];
+        Array.Clear(output);
 
+        var m = (1.0d / InputSize) * rate;
         var i = 0;
         for (var j = 0; j < Size; j++) // for each neuron in this layer
         {
-            var actual = biases[j];
-            for (var k = 0; k < input.Length; k++) // for each input neuron
-            {
-                actual += (weights[i + k] * input[k]);
-            }
-            actual = activation.Activate(actual);
-
-            var deltaCost = (actual - expected[j]);// * actual * (1 - actual);
-                
+            var actual = ctx.LayerActivated[index][j];
+            var deltaCost = (actual - ctx.Expected[index][j]);// * actual * (1 - actual);
+                        
             biases[j] -= deltaCost * m;
             for (var k = 0; k < input.Length; k++) // for each input neuron
             {
@@ -86,8 +84,6 @@ internal class DenseLayer : ILayer
                 i++;
             }
         }
-
-        Pool.Instance.Return(expected);
 
         return output;
     }

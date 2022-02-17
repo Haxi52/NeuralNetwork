@@ -18,6 +18,12 @@ public class Network
         this.inputCount = inputCount;
     }
 
+    public NetworkContext CreateContext()
+    {
+        var sizes = new[] { inputCount }.Concat(layers.Select(i => i.Size)).ToArray();
+        return NetworkContext.Create(sizes);
+    }
+
     public Network AddLayer(int size, ActivationType activationType)
     {
         var input = layers.LastOrDefault()?.Size ?? inputCount;
@@ -31,70 +37,50 @@ public class Network
             _ => throw new Exception(),
         };
 
-        layers.Add(new DenseLayer(input, size, activation));
+        layers.Add(new DenseLayer(layers.Count + 1, input, size, activation));
         return this;
     }
 
-    public double[] Process(double[] inputs)
+    public double[] Process(NetworkContext ctx)
     {
-        if (inputs == null) throw new ArgumentNullException(nameof(inputs));
-        if (inputs.Length != inputCount) throw new ArgumentOutOfRangeException(nameof(inputs));
+        if (ctx is null) throw new ArgumentNullException(nameof(ctx));
 
 
-        var result = inputs;
         foreach (var layer in layers)
         {
-            var input = result;
-            result = layer.Forward(input);
-            Pool.Instance.Return(input);
+            layer.Forward(ctx);
         }
 
-        return result;
+        return ctx.Output;
     }
 
 
-    public double Learn(double[][] inputSet, double[][] expectedSet, double rate)
+    public double Learn(NetworkContext ctx, double rate)
     {
-        var cache = new List<double[]>(inputSet.First().Length);
-        var actualSet = new double[inputSet.Length][]; //new List<double[]>(inputSet.Length);
-
-        for (var set = 0; set < inputSet.Length; set++) // foreach training instance
+        ctx.Reset();
+        foreach (var set in ctx.TrainingData)
         {
-            var input = inputSet[set];
-            var expected = expectedSet[set];
+            var input = set.inputs;
+            var expected = set.expected;
 
-            for (var i = 0; i < input.Length; i++)
+            ctx.SetInput(input);
+
+            foreach (var layer in layers)
             {
-
-                var forward = Pool.Instance.Borrow(inputCount);
-                Array.Copy(input, forward, inputCount);
-
-                foreach (var layer in layers)
-                {
-                    cache.Add(forward);
-                    forward = layer.Forward(forward);
-                }
-                actualSet[set] = forward;
-
-                var learn = Pool.Instance.Borrow(layers.Last().Size);
-                Array.Copy(expected, learn, expected.Length);
-
-
-                Pool.Instance.Return(forward);
-
-                for (var lIndex = layers.Count - 1; lIndex >= 0; lIndex--)
-                {
-                    var layer = layers[lIndex];
-                    var actual = cache.Last();
-                    cache.Remove(actual);
-                    learn = layer.Learn(actual, learn, rate);
-                    Pool.Instance.Return(actual);
-                }
-                Pool.Instance.Return(learn);
+                layer.Forward(ctx);
             }
+            ctx.PushActual();
+
+            Array.Copy(expected, ctx.Expected[layers.Count - 1], expected.Length);
+            for (var lIndex = layers.Count - 1; lIndex >= 0; lIndex--)
+            {
+                var layer = layers[lIndex];
+                layer.Learn(ctx, rate);
+            }
+
         }
 
-        return Cost(expectedSet, actualSet);
+        return Cost(ctx);
     }
 
 
@@ -107,33 +93,18 @@ public class Network
     }
 
 
-    private static double Cost(ReadOnlySpan<double[]> expected, ReadOnlySpan<double[]> actual)
+    private static double Cost(NetworkContext ctx)
     {
-        if (expected == null) throw new ArgumentNullException(nameof(expected));
-        if (actual == null) throw new ArgumentNullException(nameof(actual));
-
-        var result = Math.Pow(expected[0][0] - actual[0][0], 2);
-
-        for (var set = 0; set < expected.Length; set++)
+        var cost = 0d;
+        var j = 0;
+        foreach(var set in ctx.TrainingData.Select((data, i) => (data, i)))
         {
-            for(var i = 0; i < expected[set].Length; i++)
+            for(var k = 0; k < ctx.Actuals[set.i].Length; k++)
             {
-                result = (result + Math.Pow(expected[set][i] - actual[set][i], 2)) * 0.5d;
+                cost += Math.Pow(set.data.expected[k] - ctx.Actuals[set.i][k], 2);
+                j++;
             }
         }
-
-        return result;
+        return cost / j;
     }
 }
-
-/*
- * n * w = o
- * 
- * n * (w - e) = y
- * 
- * w - e = y / n
- * 
- * (y / n) - w = -e
- * 
- * 
- */

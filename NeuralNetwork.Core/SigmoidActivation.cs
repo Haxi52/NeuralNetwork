@@ -8,13 +8,16 @@ namespace NeuralNetwork.Core;
 
 internal class SigmoidActivation : IActivation
 {
-    public double[] Forward(double[] input)
+    public double[] Forward(NetworkContext ctx, int index)
     {
+        var input = ctx.LayerOutput[index];
+        var output = ctx.LayerActivated[index];
+
         for (var i = 0; i < input.Length; i++)
         {
-            input[i] = 1d / (1d + Math.Pow(Math.E, -input[i]));
+            output[i] = 1d / (1d + Math.Pow(Math.E, -input[i]));
         }
-        return input;
+        return output;
     }
     public double Activate(double input) => 1d / (1d + Math.Pow(Math.E, -input));
 }

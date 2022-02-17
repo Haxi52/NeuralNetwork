@@ -3,16 +3,18 @@
 
 
 using NeuralNetwork.Core;
+using System.Diagnostics;
 
 Console.WriteLine("Hello, World!");
 
 var generations = 0;
 var network = new Network(2);
-network.AddLayer(2, ActivationType.None);
-network.AddLayer(2, ActivationType.None);
+network.AddLayer(2, ActivationType.Sigmoid);
+network.AddLayer(2, ActivationType.Sigmoid);
 network.AddLayer(2, ActivationType.None);
 network.Randomize();
 
+var ctx = network.CreateContext();
 
 var inputSet = new[]
 {
@@ -30,7 +32,9 @@ var expectedSet = new[]
    // new[] { 0d, 0d, },
 };
 
-var result = network.Process(inputSet[0]);
+
+ctx.SetInput(inputSet[0]);
+var result = network.Process(ctx);
 // var cost = 0d;
 Console.WriteLine($"input: {string.Join(", ", inputSet[0].Select(i => $"{i:0.0000}"))}");
 Console.WriteLine($"expec: {string.Join(", ", expectedSet[0].Select(i => $"{i:0.0000}"))}");
@@ -53,9 +57,10 @@ void LoopInteractive()
 
     while (Console.ReadKey().Key != ConsoleKey.Escape)
     {
-        var cost = network.Learn(inputSet, expectedSet, 0.05d);
+        var cost = network.Learn(ctx, 0.05d);
         generations++;
-        var result2 = network.Process(inputSet[0]);
+        ctx.SetInput(inputSet[0]);
+        var result2 = network.Process(ctx);
         Console.WriteLine($"after: {string.Join(", ", result2.Select(i => $"{i:0.0000}"))} | cost: {cost:0.000000} | gen: {generations}");
 
         foreach (var layer in network.Layers)
@@ -70,15 +75,27 @@ void LoopInteractive()
 void LearnALot()
 {
     var cost = 0d;
+    ctx.TrainingData.Clear();
+    for(var i =0; i < inputSet.Length; i++)
+    {
+        ctx.TrainingData.Add((inputSet[i], expectedSet[i]));
+    }
+
+    var sw = new Stopwatch();
+    sw.Start();
 
     for (var k = 0; k < 100; k++)
     {
         for (var i = 0; i < 1000; i++)
         {
-            cost = network.Learn(inputSet, expectedSet, 0.0005d);
+            cost = network.Learn(ctx, 0.0005d);
             generations++;
         }
-        var result2 = network.Process(inputSet[0]);
+        ctx.SetInput(inputSet[0]);
+        var result2 = network.Process(ctx);
         Console.WriteLine($"after: {string.Join(", ", result2.Select(i => $"{i:0.0000}"))} | cost: {cost:0.000000} | gen: {generations}");
     }
+
+    sw.Stop();
+    Console.WriteLine($"Completed in {sw.Elapsed}");
 }

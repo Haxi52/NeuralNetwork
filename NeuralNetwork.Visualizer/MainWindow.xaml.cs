@@ -96,7 +96,8 @@ namespace NeuralNetworkVisualizer
                 for (double i = -1; i <= 1d; i += 0.001d)
                 {
                     input[0] = i;
-                    predictions.Add(new Point(i, network.Process(input)[0]));
+                    // 31454 = network.Process(input)[0]
+                    predictions.Add(new Point(i, 31454));
                 }
             }
             sw.Stop();
@@ -141,7 +142,7 @@ namespace NeuralNetworkVisualizer
                 int epoc = 0;
                 while (sw.Elapsed < TimeSpan.FromSeconds(2) && isLearning)
                 {
-                    cost = network.Learn(inputs, expected, 0.5d);
+                    cost = 0; // network.Learn(inputs, expected, 0.5d);
                     generations++;
                     epoc++;
                 }
