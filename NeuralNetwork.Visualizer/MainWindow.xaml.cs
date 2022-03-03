@@ -30,8 +30,10 @@ namespace NeuralNetworkVisualizer
         private readonly List<UIElement> PredictedPoints = new List<UIElement>();
 
         private readonly Network network;
+        private readonly NetworkContext ctx;
         private int generations = 0;
         private double cost = 0f;
+        private readonly double learningRate = 0.07d;
         private volatile bool isLearning = false;
         private string statusText = string.Empty;
 
@@ -49,11 +51,12 @@ namespace NeuralNetworkVisualizer
             };
 
             network = new Network(1)
-                .AddLayer(16, ActivationType.ReLU)
-                .AddLayer(16, ActivationType.Softmax)
+                .AddLayer(8, ActivationType.Sigmoid)
+                .AddLayer(8, ActivationType.ReLU)
                 .AddLayer(1, ActivationType.None);
 
             network.Randomize();
+            ctx = network.CreateContext();
         }
 
         private void DrawGraph()
@@ -83,10 +86,10 @@ namespace NeuralNetworkVisualizer
             return Math.Sin(i * Math.PI) / Math.PI;
         }
 
+        private List<Point> predictions = new List<Point>();
         private async Task PredictAndDraw()
         {
-            var predictions = new List<Point>();
-
+            predictions.Clear();
             var sw = new Stopwatch();
             sw.Start();
 
@@ -96,24 +99,32 @@ namespace NeuralNetworkVisualizer
                 for (double i = -1; i <= 1d; i += 0.001d)
                 {
                     input[0] = i;
-                    // 31454 = network.Process(input)[0]
-                    predictions.Add(new Point(i, 31454));
+                    ctx.SetInput(input);
+                    var val = network.Process(ctx)[0];
+                    predictions.Add(new Point(i, val));
                 }
             }
             sw.Stop();
 
             await Dispatcher.InvokeAsync(() =>
             {
-                foreach (var element in PredictedPoints)
+                var halfSize = 2d;
+                if (PredictedPoints.Any())
                 {
-                    Canvas.Children.Remove(element);
+                    foreach (var p in predictions.Zip(PredictedPoints))
+                    {
+                        var scaled = ScaleUp(p.First);
+                        Canvas.SetLeft(p.Second, scaled.X - halfSize);
+                        Canvas.SetTop(p.Second, scaled.Y - halfSize);
+                    }
                 }
-                PredictedPoints.Clear();
-
-                foreach (var p in predictions)
+                else
                 {
-                    PredictedPoints.Add(
-                        DrawPoint(new Point(p.X, p.Y), 4.0d, brush: Brushes.Red));
+                    foreach (var p in predictions)
+                    {
+                        PredictedPoints.Add(
+                            DrawPoint(new Point(p.X, p.Y), 4.0d, brush: Brushes.Red));
+                    }
                 }
 
                 StatusText.Text = $"G: {generations}  C: {cost:0.000000}  T: {sw.Elapsed.Ticks}";
@@ -123,26 +134,21 @@ namespace NeuralNetworkVisualizer
 
         private async Task Learn()
         {
-            var inputsList = new List<double[]>();
-            var expectedList = new List<double[]>();
-
+            var testTime = TimeSpan.FromMilliseconds(100);
+            ctx.TrainingData.Clear();
             for (double i = -1; i <= 1d; i += 0.002d)
             {
-                inputsList.Add(new[] { i });
-                expectedList.Add(new[] { Fit(i) });
+                ctx.TrainingData.Add((new[] { i }, new[] { Fit(i) }));
             }
-
-            var inputs = inputsList.ToArray();
-            var expected = expectedList.ToArray();
 
             var sw = new Stopwatch();
             while (isLearning)
             {
                 sw.Start();
                 int epoc = 0;
-                while (sw.Elapsed < TimeSpan.FromSeconds(2) && isLearning)
+                while (sw.Elapsed < testTime && isLearning)
                 {
-                    cost = 0; // network.Learn(inputs, expected, 0.5d);
+                    cost = network.Train(ctx, learningRate);
                     generations++;
                     epoc++;
                 }
@@ -185,9 +191,11 @@ namespace NeuralNetworkVisualizer
                 Height = size,
                 Width = size,
                 Fill = brush,
-                RenderTransform = new TranslateTransform(p.X - halfSize, p.Y - halfSize),
             };
             Canvas.Children.Add(e);
+            Canvas.SetLeft(e, p.X - halfSize);
+            Canvas.SetTop(e, p.Y - halfSize);
+
             return e;
         }
 

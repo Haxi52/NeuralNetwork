@@ -10,6 +10,7 @@ internal class DenseLayer : ILayer
 {
     private readonly double[] biases;
     private readonly double[] weights;
+
     private readonly int index;
     private readonly IActivation activation;
 
@@ -50,37 +51,41 @@ internal class DenseLayer : ILayer
         var rng = new Random(seed ?? (int)DateTime.Now.Ticks);
         for (var i = 0; i < biases.Length; i++)
         {
-            biases[i] = rng.NextDouble() - 0.5d;
+            biases[i] =  (rng.NextDouble() * 4d) - 2.0d;
         }
 
         for (var i = 0; i < weights.Length; i++)
         {
-            weights[i] = (rng.NextDouble() * 8) - 4.0d;
+            weights[i] = (rng.NextDouble() * 4d) - 2.0d;
         }
     }
 
 
-
-    public double[] Learn(NetworkContext ctx,
+    public double[] Train(NetworkContext ctx,
                           double rate) // how fast to move the weights/biases to improve the cost
     {
-        var input = ctx.LayerActivated[index - 1];
+        var input = ctx.LayerOutput[index - 1];
         var output = ctx.Expected[index - 1];
+        var expected = ctx.Expected[index];
         Array.Clear(output);
 
         var m = (1.0d / InputSize) * rate;
         var i = 0;
+
         for (var j = 0; j < Size; j++) // for each neuron in this layer
         {
-            var actual = ctx.LayerActivated[index][j];
-            var deltaCost = (actual - ctx.Expected[index][j]);// * actual * (1 - actual);
-                        
-            biases[j] -= deltaCost * m;
-            for (var k = 0; k < input.Length; k++) // for each input neuron
+            var actual = ctx.LayerOutput[index][j];
+            var deltaCost = actual - expected[j];
+            var deltaZ = actual * activation.Prime(actual);
+            var error = (deltaCost * deltaZ) + double.Epsilon;
+
+            // ctx.AdjustedBiases[index][j] = (ctx.AdjustedBiases[index][j] + error) * 0.5d;
+            biases[j] -= error * m;
+            for (var k = 0; k < output.Length; k++) // for each input neuron
             {
-                var delta = deltaCost * input[k];
-                weights[i] -= delta * m;
-                output[k] += weights[i] * deltaCost * m;
+                output[k] += weights[i] * expected[j];
+                weights[i] -= error * input[k] * m;
+                // ctx.AdjustedWeights[index][i] = (ctx.AdjustedWeights[index][i] + (error * input[k])) * 0.5d;
                 i++;
             }
         }
@@ -88,36 +93,50 @@ internal class DenseLayer : ILayer
         return output;
     }
 
+    public void Apply(NetworkContext ctx)
+    {
+        for(var i = 0; i < Size; i++)
+        {
+            biases[i] -= ctx.AdjustedBiases[index][i];
+        }
 
-    //public double[] Learn(double[] input, // input from previous layer
-    //                      double[] expected, // expected output given the inputs, 
+        for(var i = 0; i < weights.Length; i ++)
+        {
+            weights[i] -= ctx.AdjustedWeights[index][i];
+        }
+    }
+
+
+
+    //public double[] Learn(NetworkContext ctx,
     //                      double rate) // how fast to move the weights/biases to improve the cost
     //{
-    //    var output = Pool.Instance.Borrow(InputSize);
-    //    var m = (1.0d / InputSize) * rate;
+    //    var input = ctx.LayerOutput[index - 1];
+    //    var output = ctx.Expected[index - 1];
+    //    var expected = ctx.Expected[index];
+    //    Array.Clear(output);
 
+    //    var m = (1.0d / InputSize) * rate;
     //    var i = 0;
-    //    for (var j = 0; j < Size; j++) // for each neuron
+    //    for (var j = 0; j < Size; j++) // for each neuron in this layer
     //    {
-    //        var sumActual = 0d;
-    //        for (var k = 0; k < input.Length; k++) // for each weight
+    //        var actual = ctx.LayerOutput[index][j];
+    //        var error = (actual - expected[j]) * activation.Prime(actual);
+
+    //        biases[j] -= error * m;
+    //        for (var k = 0; k < output.Length; k++) // for each input neuron
     //        {
-    //            var actual = activation.Activate(weights[i] * input[k]);
-    //            var delta = actual - expected[j];
-    //            weights[i] -= delta * m;
+    //            // var delta = error * input[k];
 
     //            output[k] += weights[i] * expected[j];
-    //            sumActual += delta;
+    //            weights[i] -= error * input[k] * m;
     //            i++;
     //        }
-    //        // biases[j] -= sumActual * m;
-
     //    }
-
-    //    Pool.Instance.Return(expected);
 
     //    return output;
     //}
+
 
     public override string ToString()
     {

@@ -10,9 +10,9 @@ internal class NoActivation : IActivation
 {
     public double[] Forward(NetworkContext ctx, int index)
     {
-        Array.Copy(ctx.LayerOutput[index], ctx.LayerActivated[index], ctx.LayerOutput[index].Length);
-        return ctx.LayerActivated[index];
+        return ctx.LayerOutput[index];
     }
 
     public double Activate(double input) => input;
+    public double Prime(double input) => input;
 }

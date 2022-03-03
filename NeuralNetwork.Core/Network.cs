@@ -55,7 +55,7 @@ public class Network
     }
 
 
-    public double Learn(NetworkContext ctx, double rate)
+    public double Train(NetworkContext ctx, double rate)
     {
         ctx.Reset();
         foreach (var set in ctx.TrainingData)
@@ -71,14 +71,17 @@ public class Network
             }
             ctx.PushActual();
 
-            Array.Copy(expected, ctx.Expected[layers.Count - 1], expected.Length);
+            Array.Copy(expected, ctx.Expected[ctx.Expected.Count - 1], expected.Length);
             for (var lIndex = layers.Count - 1; lIndex >= 0; lIndex--)
             {
                 var layer = layers[lIndex];
-                layer.Learn(ctx, rate);
+                layer.Train(ctx, rate);
             }
 
         }
+
+        foreach(var layer in layers)    
+            layer.Apply(ctx);
 
         return Cost(ctx);
     }

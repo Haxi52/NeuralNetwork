@@ -11,7 +11,6 @@ var generations = 0;
 var network = new Network(2);
 network.AddLayer(2, ActivationType.Sigmoid);
 network.AddLayer(2, ActivationType.Sigmoid);
-network.AddLayer(2, ActivationType.None);
 network.Randomize();
 
 var ctx = network.CreateContext();
@@ -32,6 +31,11 @@ var expectedSet = new[]
    // new[] { 0d, 0d, },
 };
 
+ctx.TrainingData.Clear();
+for (var i = 0; i < inputSet.Length; i++)
+{
+    ctx.TrainingData.Add((inputSet[i], expectedSet[i]));
+}
 
 ctx.SetInput(inputSet[0]);
 var result = network.Process(ctx);
@@ -42,7 +46,7 @@ Console.WriteLine($"first: {string.Join(", ", result.Select(i => $"{i:0.0000}"))
 
 Console.WriteLine();
 
- LearnALot();
+LearnALot();
 // LoopInteractive();
 
 
@@ -57,7 +61,7 @@ void LoopInteractive()
 
     while (Console.ReadKey().Key != ConsoleKey.Escape)
     {
-        var cost = network.Learn(ctx, 0.05d);
+        var cost = network.Train(ctx, 0.05d);
         generations++;
         ctx.SetInput(inputSet[0]);
         var result2 = network.Process(ctx);
@@ -75,12 +79,6 @@ void LoopInteractive()
 void LearnALot()
 {
     var cost = 0d;
-    ctx.TrainingData.Clear();
-    for(var i =0; i < inputSet.Length; i++)
-    {
-        ctx.TrainingData.Add((inputSet[i], expectedSet[i]));
-    }
-
     var sw = new Stopwatch();
     sw.Start();
 
@@ -88,7 +86,7 @@ void LearnALot()
     {
         for (var i = 0; i < 1000; i++)
         {
-            cost = network.Learn(ctx, 0.0005d);
+            cost = network.Train(ctx, 0.05d);
             generations++;
         }
         ctx.SetInput(inputSet[0]);

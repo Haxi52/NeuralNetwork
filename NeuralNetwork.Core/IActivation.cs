@@ -9,7 +9,10 @@ namespace NeuralNetwork.Core;
 public interface IActivation
 {
     public double[] Forward(NetworkContext ctx, int index);
+
     public double Activate(double input);
+
+    public double Prime(double input);
 }
 
 public enum ActivationType
