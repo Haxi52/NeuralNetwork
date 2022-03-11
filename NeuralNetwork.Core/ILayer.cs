@@ -11,7 +11,7 @@ public interface ILayer
 {
     int Size { get; }
     double[] Forward(NetworkContext ctx);
-    double[] Train(NetworkContext ctx, double rate);
-    void Apply(NetworkContext ctx);
+    double[] Train(NetworkContext ctx);
+    void Apply(NetworkContext ctx, double rate);
     void Randomize(int? seed = null);
 }

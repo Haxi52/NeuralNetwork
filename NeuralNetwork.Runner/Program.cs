@@ -46,7 +46,7 @@ Console.WriteLine($"first: {string.Join(", ", result.Select(i => $"{i:0.0000}"))
 
 Console.WriteLine();
 
-LearnALot();
+await LearnALot();
 // LoopInteractive();
 
 
@@ -76,7 +76,7 @@ void LoopInteractive()
 
 }
 
-void LearnALot()
+async Task LearnALot()
 {
     var cost = 0d;
     var sw = new Stopwatch();
@@ -86,7 +86,7 @@ void LearnALot()
     {
         for (var i = 0; i < 1000; i++)
         {
-            cost = network.Train(ctx, 0.05d);
+            cost = await network.Train(ctx, 0.05d);
             generations++;
         }
         ctx.SetInput(inputSet[0]);

@@ -33,7 +33,7 @@ namespace NeuralNetworkVisualizer
         private readonly NetworkContext ctx;
         private int generations = 0;
         private double cost = 0f;
-        private readonly double learningRate = 0.07d;
+        private readonly double learningRate = 0.1d;
         private volatile bool isLearning = false;
         private string statusText = string.Empty;
 
@@ -51,8 +51,8 @@ namespace NeuralNetworkVisualizer
             };
 
             network = new Network(1)
-                .AddLayer(8, ActivationType.Sigmoid)
-                .AddLayer(8, ActivationType.ReLU)
+                .AddLayer(16, ActivationType.ReLU)
+                .AddLayer(16, ActivationType.Sigmoid)
                 .AddLayer(1, ActivationType.None);
 
             network.Randomize();

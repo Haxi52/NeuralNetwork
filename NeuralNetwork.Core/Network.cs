@@ -58,8 +58,10 @@ public class Network
     public double Train(NetworkContext ctx, double rate)
     {
         ctx.Reset();
-        foreach (var set in ctx.TrainingData)
+
+        foreach(var set in ctx.TrainingData)
         {
+
             var input = set.inputs;
             var expected = set.expected;
 
@@ -75,13 +77,13 @@ public class Network
             for (var lIndex = layers.Count - 1; lIndex >= 0; lIndex--)
             {
                 var layer = layers[lIndex];
-                layer.Train(ctx, rate);
+                layer.Train(ctx);
             }
-
+            ctx.Epoc();
         }
 
         foreach(var layer in layers)    
-            layer.Apply(ctx);
+            layer.Apply(ctx, rate);
 
         return Cost(ctx);
     }

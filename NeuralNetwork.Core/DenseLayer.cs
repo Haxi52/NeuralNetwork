@@ -49,43 +49,41 @@ internal class DenseLayer : ILayer
     public void Randomize(int? seed = null)
     {
         var rng = new Random(seed ?? (int)DateTime.Now.Ticks);
+        var range = Math.Sqrt(Size);
         for (var i = 0; i < biases.Length; i++)
         {
-            biases[i] =  (rng.NextDouble() * 4d) - 2.0d;
+            biases[i] = (rng.NextDouble() * range) - (range / 2.0d);
         }
 
         for (var i = 0; i < weights.Length; i++)
         {
-            weights[i] = (rng.NextDouble() * 4d) - 2.0d;
+            weights[i] =  (rng.NextDouble() * range) - (range / 2.0d);
         }
     }
 
 
-    public double[] Train(NetworkContext ctx,
-                          double rate) // how fast to move the weights/biases to improve the cost
+    public double[] Train(NetworkContext ctx) // how fast to move the weights/biases to improve the cost
     {
         var input = ctx.LayerOutput[index - 1];
         var output = ctx.Expected[index - 1];
         var expected = ctx.Expected[index];
-        Array.Clear(output);
+        Array.Copy(input, output, output.Length);
 
-        var m = (1.0d / InputSize) * rate;
         var i = 0;
 
         for (var j = 0; j < Size; j++) // for each neuron in this layer
         {
             var actual = ctx.LayerOutput[index][j];
             var deltaCost = actual - expected[j];
-            var deltaZ = actual * activation.Prime(actual);
-            var error = (deltaCost * deltaZ) + double.Epsilon;
+            var deltaZ = 1; // (actual * activation.Prime(actual));
+            var error = deltaCost * deltaZ;
 
-            // ctx.AdjustedBiases[index][j] = (ctx.AdjustedBiases[index][j] + error) * 0.5d;
-            biases[j] -= error * m;
+            ctx.AdjustedBiases[index][j] += error;
             for (var k = 0; k < output.Length; k++) // for each input neuron
             {
-                output[k] += weights[i] * expected[j];
-                weights[i] -= error * input[k] * m;
-                // ctx.AdjustedWeights[index][i] = (ctx.AdjustedWeights[index][i] + (error * input[k])) * 0.5d;
+                output[k] += weights[i] * error;
+
+                ctx.AdjustedWeights[index][i] += error * input[k];//  * weights[i];
                 i++;
             }
         }
@@ -93,50 +91,19 @@ internal class DenseLayer : ILayer
         return output;
     }
 
-    public void Apply(NetworkContext ctx)
+    public void Apply(NetworkContext ctx, double rate)
     {
+        
         for(var i = 0; i < Size; i++)
         {
-            biases[i] -= ctx.AdjustedBiases[index][i];
+            biases[i] -= (ctx.AdjustedBiases[index][i] / ctx.TrainingEpocs) * rate;
         }
 
         for(var i = 0; i < weights.Length; i ++)
         {
-            weights[i] -= ctx.AdjustedWeights[index][i];
+            weights[i] -= (ctx.AdjustedWeights[index][i] / ctx.TrainingEpocs) * rate;
         }
     }
-
-
-
-    //public double[] Learn(NetworkContext ctx,
-    //                      double rate) // how fast to move the weights/biases to improve the cost
-    //{
-    //    var input = ctx.LayerOutput[index - 1];
-    //    var output = ctx.Expected[index - 1];
-    //    var expected = ctx.Expected[index];
-    //    Array.Clear(output);
-
-    //    var m = (1.0d / InputSize) * rate;
-    //    var i = 0;
-    //    for (var j = 0; j < Size; j++) // for each neuron in this layer
-    //    {
-    //        var actual = ctx.LayerOutput[index][j];
-    //        var error = (actual - expected[j]) * activation.Prime(actual);
-
-    //        biases[j] -= error * m;
-    //        for (var k = 0; k < output.Length; k++) // for each input neuron
-    //        {
-    //            // var delta = error * input[k];
-
-    //            output[k] += weights[i] * expected[j];
-    //            weights[i] -= error * input[k] * m;
-    //            i++;
-    //        }
-    //    }
-
-    //    return output;
-    //}
-
 
     public override string ToString()
     {
