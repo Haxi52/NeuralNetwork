@@ -10,14 +10,15 @@ internal class ReLUActivation : IActivation
 {
     public double[] Forward(NetworkContext ctx, int index)
     {
-        var data = ctx.LayerOutput[index];
+        var input = ctx.PreOutput[index];
+        var output = ctx.LayerOutput[index];
 
-        for (var i = 0; i < data.Length; i++)
+        for (var i = 0; i < input.Length; i++)
         {
-            data[i] = Math.Max(0, data[i]);
+            output[i] = Math.Max(0, input[i]);
         }
 
-        return data;
+        return output;
     }
 
     public double Activate(double input) => Math.Max(0, input);

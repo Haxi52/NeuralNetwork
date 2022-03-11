@@ -11,6 +11,7 @@ namespace NeuralNetwork.Core
         private int trainingEpocs = 0;
         private Stack<double[]> actualsCache = new Stack<double[]>();
 
+        internal List<double[]> PreOutput { get; } = new();
         internal List<double[]> LayerOutput { get; } = new();
         internal List<double[]> Expected { get; } = new();
         internal List<double[]> Actuals { get; } = new();
@@ -31,6 +32,7 @@ namespace NeuralNetwork.Core
             var prevSize = 0;
             foreach (var size in sizes)
             {
+                ctx.PreOutput.Add(new double[size]);
                 ctx.LayerOutput.Add(new double[size]);
                 ctx.Expected.Add(new double[size]);
                 ctx.AdjustedBiases.Add(new double[size]);

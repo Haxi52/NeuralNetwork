@@ -10,25 +10,26 @@ internal class SoftmaxActivation : IActivation
 {
     public double[] Forward(NetworkContext ctx, int index)
     {
-        var data = ctx.LayerOutput[index];
+        var input = ctx.PreOutput[index];
+        var output = ctx.LayerOutput[index];
 
-        for (var i = 0; i < data.Length; i++)
+        for (var i = 0; i < input.Length; i++)
         {
-            data[i] = Math.Exp(data[i]);
+            output[i] = Math.Exp(input[i]);
         }
 
         var sum = .0d;
-        for (var i = 0; i < data.Length; i++)
+        for (var i = 0; i < output.Length; i++)
         {
-            sum += data[i];
+            sum += output[i];
         }
 
-        for (var i = 0; i < data.Length; i++)
+        for (var i = 0; i < input.Length; i++)
         {
-            data[i] = (data[i] / sum);
+            output[i] = (output[i] / sum);
         }
 
-        return data;
+        return output;
     }
 
     public double Activate(double input) => input;

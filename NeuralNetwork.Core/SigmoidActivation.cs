@@ -10,14 +10,15 @@ internal class SigmoidActivation : IActivation
 {
     public double[] Forward(NetworkContext ctx, int index)
     {
-        var data = ctx.LayerOutput[index];
+        var input = ctx.PreOutput[index];
+        var output = ctx.LayerOutput[index];
 
-        for (var i = 0; i < data.Length; i++)
+        for (var i = 0; i < input.Length; i++)
         {
-            data[i] = 1d / (1d + Math.Pow(Math.E, -data[i]));
+            output[i] = 1d / (1d + Math.Pow(Math.E, -input[i]));
         }
 
-        return data;
+        return output;
     }
     public double Activate(double input) => 1d / (1d + Math.Pow(Math.E, -input));
 

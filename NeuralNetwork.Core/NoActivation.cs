@@ -10,6 +10,7 @@ internal class NoActivation : IActivation
 {
     public double[] Forward(NetworkContext ctx, int index)
     {
+        Array.Copy(ctx.PreOutput[index], ctx.LayerOutput[index], ctx.PreOutput[index].Length);
         return ctx.LayerOutput[index];
     }
 

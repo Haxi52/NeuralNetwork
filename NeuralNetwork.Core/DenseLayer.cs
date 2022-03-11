@@ -31,7 +31,7 @@ internal class DenseLayer : ILayer
     public double[] Forward(NetworkContext ctx)
     {
         var input = ctx.LayerOutput[index - 1];
-        var output = ctx.LayerOutput[index];
+        var output = ctx.PreOutput[index];
         Array.Copy(biases, output, Size);
 
         var i = 0;
@@ -49,7 +49,7 @@ internal class DenseLayer : ILayer
     public void Randomize(int? seed = null)
     {
         var rng = new Random(seed ?? (int)DateTime.Now.Ticks);
-        var range = Math.Sqrt(Size);
+        var range = Size / 2;
         for (var i = 0; i < biases.Length; i++)
         {
             biases[i] = (rng.NextDouble() * range) - (range / 2.0d);
@@ -57,7 +57,7 @@ internal class DenseLayer : ILayer
 
         for (var i = 0; i < weights.Length; i++)
         {
-            weights[i] =  (rng.NextDouble() * range) - (range / 2.0d);
+            weights[i] = (rng.NextDouble() * range) - (range / 2.0d);
         }
     }
 
@@ -74,14 +74,12 @@ internal class DenseLayer : ILayer
         for (var j = 0; j < Size; j++) // for each neuron in this layer
         {
             var actual = ctx.LayerOutput[index][j];
-            var deltaCost = actual - expected[j];
-            var deltaZ = 1; // (actual * activation.Prime(actual));
-            var error = deltaCost * deltaZ;
+            var error = actual - expected[j];
 
             ctx.AdjustedBiases[index][j] += error;
             for (var k = 0; k < output.Length; k++) // for each input neuron
             {
-                output[k] += weights[i] * error;
+                output[k] += weights[i] * error * ctx.PreOutput[index][j];
 
                 ctx.AdjustedWeights[index][i] += error * input[k];//  * weights[i];
                 i++;
@@ -93,13 +91,13 @@ internal class DenseLayer : ILayer
 
     public void Apply(NetworkContext ctx, double rate)
     {
-        
-        for(var i = 0; i < Size; i++)
+
+        for (var i = 0; i < Size; i++)
         {
             biases[i] -= (ctx.AdjustedBiases[index][i] / ctx.TrainingEpocs) * rate;
         }
 
-        for(var i = 0; i < weights.Length; i ++)
+        for (var i = 0; i < weights.Length; i++)
         {
             weights[i] -= (ctx.AdjustedWeights[index][i] / ctx.TrainingEpocs) * rate;
         }
@@ -109,9 +107,9 @@ internal class DenseLayer : ILayer
     {
         var output = new StringBuilder();
         var w = 0;
-        for(var n = 0; n < Size; n++)
+        for (var n = 0; n < Size; n++)
         {
-            for (var j =0; j < InputSize; j++)
+            for (var j = 0; j < InputSize; j++)
             {
                 output.Append($"|w{n},{j}({weights[w]:0.000})|");
                 w++;

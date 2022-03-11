@@ -33,7 +33,7 @@ namespace NeuralNetworkVisualizer
         private readonly NetworkContext ctx;
         private int generations = 0;
         private double cost = 0f;
-        private readonly double learningRate = 0.1d;
+        private readonly double learningRate = 0.01d;
         private volatile bool isLearning = false;
         private string statusText = string.Empty;
 
@@ -136,7 +136,7 @@ namespace NeuralNetworkVisualizer
         {
             var testTime = TimeSpan.FromMilliseconds(100);
             ctx.TrainingData.Clear();
-            for (double i = -1; i <= 1d; i += 0.002d)
+            for (double i = -1; i <= 1d; i += 0.004d)
             {
                 ctx.TrainingData.Add((new[] { i }, new[] { Fit(i) }));
             }
