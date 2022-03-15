@@ -33,7 +33,7 @@ namespace NeuralNetworkVisualizer
         private readonly NetworkContext ctx;
         private int generations = 0;
         private double cost = 0f;
-        private readonly double learningRate = 0.01d;
+        private readonly double learningRate = 0.001d;
         private volatile bool isLearning = false;
         private string statusText = string.Empty;
 
@@ -51,12 +51,12 @@ namespace NeuralNetworkVisualizer
             };
 
             network = new Network(1)
-                .AddLayer(16, ActivationType.ReLU)
-                .AddLayer(16, ActivationType.Sigmoid)
+                .AddLayer(32, ActivationType.ReLU)
+                .AddLayer(32, ActivationType.Sigmoid)
                 .AddLayer(1, ActivationType.None);
 
             network.Randomize();
-            ctx = network.CreateContext();
+            ctx = network.CreateContext(18);
         }
 
         private void DrawGraph()
@@ -87,12 +87,11 @@ namespace NeuralNetworkVisualizer
         }
 
         private List<Point> predictions = new List<Point>();
+        private DateTime startLearningTime;
+
         private async Task PredictAndDraw()
         {
             predictions.Clear();
-            var sw = new Stopwatch();
-            sw.Start();
-
             lock (network)
             {
                 var input = new[] { 0d };
@@ -104,7 +103,6 @@ namespace NeuralNetworkVisualizer
                     predictions.Add(new Point(i, val));
                 }
             }
-            sw.Stop();
 
             await Dispatcher.InvokeAsync(() =>
             {
@@ -127,18 +125,22 @@ namespace NeuralNetworkVisualizer
                     }
                 }
 
-                StatusText.Text = $"G: {generations}  C: {cost:0.000000}  T: {sw.Elapsed.Ticks}";
+                var duration = (DateTime.UtcNow - startLearningTime);
+                var genPerTime = generations / duration.TotalSeconds;  
+
+                StatusText.Text = $"G: {generations}  C: {cost:0.000000}  T: {duration:mm\\:ss\\.ff}   GpT: {genPerTime}";
             });
 
         }
 
         private async Task Learn()
         {
+            startLearningTime = DateTime.UtcNow;
             var testTime = TimeSpan.FromMilliseconds(100);
             ctx.TrainingData.Clear();
             for (double i = -1; i <= 1d; i += 0.004d)
             {
-                ctx.TrainingData.Add((new[] { i }, new[] { Fit(i) }));
+                ctx.TrainingData.Add((new[] { i }, new[] { Fit(i) }, new double[1]));
             }
 
             var sw = new Stopwatch();
@@ -148,12 +150,11 @@ namespace NeuralNetworkVisualizer
                 int epoc = 0;
                 while (sw.Elapsed < testTime && isLearning)
                 {
-                    cost = network.Train(ctx, learningRate);
+                    cost = await network.Train(ctx, learningRate);
                     generations++;
                     epoc++;
                 }
                 sw.Stop();
-                Debug.WriteLine($"Learn: {sw.ElapsedMilliseconds / epoc}");
                 sw.Reset();
                 await PredictAndDraw();
             }

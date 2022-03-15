@@ -10,6 +10,7 @@ public class Network
 {
     private readonly List<ILayer> layers = new();
     private readonly int inputCount;
+    private List<NetworkContext> contextList = new();
 
     public IEnumerable<ILayer> Layers => layers;
 
@@ -18,10 +19,15 @@ public class Network
         this.inputCount = inputCount;
     }
 
-    public NetworkContext CreateContext()
+    public NetworkContext CreateContext(int threads)
     {
         var sizes = new[] { inputCount }.Concat(layers.Select(i => i.Size)).ToArray();
-        return NetworkContext.Create(sizes);
+        var ctx = NetworkContext.Create(sizes);
+        contextList = Enumerable.Range(0, threads) 
+            .Select(i => NetworkContext.Create(sizes))
+            .ToList();
+
+        return ctx;
     }
 
     public Network AddLayer(int size, ActivationType activationType)
@@ -55,15 +61,35 @@ public class Network
     }
 
 
-    public double Train(NetworkContext ctx, double rate)
+    public async Task<double> Train(NetworkContext ctx, double rate)
     {
-        ctx.Reset();
+        var tasks = contextList
+            .Select(context =>
+            Task.Run(() =>
+            {
+                ctx.CopyTo(context);
+                context.Reset();
+                TrainInternal(context, 0, contextList.Count);
 
-        foreach(var set in ctx.TrainingData)
+                lock (ctx)
+                {
+                    foreach (var layer in layers)
+                        layer.Apply(context, rate);
+                }
+            }));
+
+        await Task.WhenAll(tasks);
+
+        return contextList.Select(i => i.GetCost()).Average();  
+    }
+
+    private void TrainInternal(NetworkContext ctx, int partition, int scale)
+    {
+        for (var i = partition; i < ctx.TrainingData.Count; i += scale)
         {
-
-            var input = set.inputs;
-            var expected = set.expected;
+            var input = ctx.TrainingData[i].inputs;
+            var expected = ctx.TrainingData[i].expected;
+            var actual = ctx.TrainingData[i].actual;
 
             ctx.SetInput(input);
 
@@ -71,9 +97,10 @@ public class Network
             {
                 layer.Forward(ctx);
             }
-            ctx.PushActual();
 
+            Array.Copy(ctx.Output, actual, ctx.Output.Length);
             Array.Copy(expected, ctx.Expected[ctx.Expected.Count - 1], expected.Length);
+
             for (var lIndex = layers.Count - 1; lIndex >= 0; lIndex--)
             {
                 var layer = layers[lIndex];
@@ -81,11 +108,6 @@ public class Network
             }
             ctx.Epoc();
         }
-
-        foreach(var layer in layers)    
-            layer.Apply(ctx, rate);
-
-        return Cost(ctx);
     }
 
 
@@ -97,19 +119,4 @@ public class Network
         }
     }
 
-
-    private static double Cost(NetworkContext ctx)
-    {
-        var cost = 0d;
-        var j = 0;
-        foreach(var set in ctx.TrainingData.Select((data, i) => (data, i)))
-        {
-            for(var k = 0; k < ctx.Actuals[set.i].Length; k++)
-            {
-                cost += Math.Pow(set.data.expected[k] - ctx.Actuals[set.i][k], 2);
-                j++;
-            }
-        }
-        return cost / j;
-    }
 }

@@ -34,7 +34,7 @@ var expectedSet = new[]
 ctx.TrainingData.Clear();
 for (var i = 0; i < inputSet.Length; i++)
 {
-    ctx.TrainingData.Add((inputSet[i], expectedSet[i]));
+    ctx.TrainingData.Add((inputSet[i], expectedSet[i], new double[expectedSet[i].Length]));
 }
 
 ctx.SetInput(inputSet[0]);

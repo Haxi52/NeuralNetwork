@@ -49,7 +49,7 @@ internal class DenseLayer : ILayer
     public void Randomize(int? seed = null)
     {
         var rng = new Random(seed ?? (int)DateTime.Now.Ticks);
-        var range = Size / 2;
+        var range = Math.Sqrt(Size);
         for (var i = 0; i < biases.Length; i++)
         {
             biases[i] = (rng.NextDouble() * range) - (range / 2.0d);
@@ -79,9 +79,9 @@ internal class DenseLayer : ILayer
             ctx.AdjustedBiases[index][j] += error;
             for (var k = 0; k < output.Length; k++) // for each input neuron
             {
-                output[k] += weights[i] * error * ctx.PreOutput[index][j];
+                output[k] += weights[i] * error * ctx.LayerOutput[index][j]; 
 
-                ctx.AdjustedWeights[index][i] += error * input[k];//  * weights[i];
+                ctx.AdjustedWeights[index][i] += error * input[k] ;
                 i++;
             }
         }
@@ -91,7 +91,6 @@ internal class DenseLayer : ILayer
 
     public void Apply(NetworkContext ctx, double rate)
     {
-
         for (var i = 0; i < Size; i++)
         {
             biases[i] -= (ctx.AdjustedBiases[index][i] / ctx.TrainingEpocs) * rate;
