@@ -8,6 +8,7 @@ namespace NeuralNetwork.Core;
 
 internal class SoftmaxActivation : IActivation
 {
+    public ActivationType ActivationType => ActivationType.Softmax;
     public double[] Forward(NetworkContext ctx, int index)
     {
         var input = ctx.PreOutput[index];

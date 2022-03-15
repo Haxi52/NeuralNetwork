@@ -10,6 +10,7 @@ public class Network
 {
     private readonly List<ILayer> layers = new();
     private readonly int inputCount;
+    private double Cost = 0d;
     private List<NetworkContext> contextList = new();
 
     public IEnumerable<ILayer> Layers => layers;
@@ -19,11 +20,58 @@ public class Network
         this.inputCount = inputCount;
     }
 
+    public static Network Load(Stream stream)
+    {
+        using var reader = new BinaryReader(stream);
+        var expectedHeader = Encoding.UTF8.GetBytes("nn");
+        var header = reader.ReadBytes(2);
+        var headerVersion = reader.ReadInt32();
+        
+        if (header[0] != expectedHeader[0] || header[1] != expectedHeader[1])
+        {
+            throw new Exception("Not a valid neural network save.");
+        }
+        if (headerVersion != 0xA0)
+        {
+            throw new Exception("Neural network save incompatible version");
+        }
+
+        var inputCount = reader.ReadInt32();
+
+        var network = new Network(inputCount);
+
+        while(stream.Position < stream.Length)
+        {
+            network.layers.Add(DenseLayer.Load(reader));
+        }
+
+        return network;
+    }
+
+    public void Save(Stream stream)
+    {
+        using var writer = new BinaryWriter(stream);
+        writer.Write(Encoding.UTF8.GetBytes("nn"));
+        writer.Write(0xA0);
+        writer.Write(inputCount);
+
+        foreach(var layer in layers)
+        {
+            if (layer is DenseLayer dense)
+            {
+                dense.Save(writer);
+            }
+        }
+        
+        writer.Flush();
+
+    }
+
     public NetworkContext CreateContext(int threads)
     {
         var sizes = new[] { inputCount }.Concat(layers.Select(i => i.Size)).ToArray();
         var ctx = NetworkContext.Create(sizes);
-        contextList = Enumerable.Range(0, threads) 
+        contextList = Enumerable.Range(0, threads)
             .Select(i => NetworkContext.Create(sizes))
             .ToList();
 
@@ -33,17 +81,7 @@ public class Network
     public Network AddLayer(int size, ActivationType activationType)
     {
         var input = layers.LastOrDefault()?.Size ?? inputCount;
-
-        IActivation activation = activationType switch
-        {
-            ActivationType.None => new NoActivation(),
-            ActivationType.ReLU => new ReLUActivation(),
-            ActivationType.Softmax => new SoftmaxActivation(),
-            ActivationType.Sigmoid => new SigmoidActivation(),
-            _ => throw new Exception(),
-        };
-
-        layers.Add(new DenseLayer(layers.Count + 1, input, size, activation));
+        layers.Add(new DenseLayer(layers.Count + 1, input, size, ActivationFactory.Create(activationType)));
         return this;
     }
 
@@ -61,7 +99,7 @@ public class Network
     }
 
 
-    public async Task<double> Train(NetworkContext ctx, double rate)
+    public async Task<double> Train(NetworkContext ctx)
     {
         var tasks = contextList
             .Select(context =>
@@ -74,13 +112,15 @@ public class Network
                 lock (ctx)
                 {
                     foreach (var layer in layers)
-                        layer.Apply(context, rate);
+                        layer.Apply(context);
                 }
             }));
 
         await Task.WhenAll(tasks);
 
-        return contextList.Select(i => i.GetCost()).Average();  
+        var cost = contextList.Select(i => i.GetCost()).Average();
+     
+        return cost;
     }
 
     private void TrainInternal(NetworkContext ctx, int partition, int scale)

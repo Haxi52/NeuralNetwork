@@ -9,6 +9,8 @@ namespace NeuralNetwork.Core
     public class NetworkContext
     {
         private int trainingEpocs = 0;
+        private double minLearningRate = 0;
+        private double maxLearningRate = 0;
 
         internal List<double[]> PreOutput { get; } = new();
         internal List<double[]> LayerOutput { get; } = new();
@@ -16,15 +18,35 @@ namespace NeuralNetwork.Core
         internal List<double[]> AdjustedWeights { get; } = new();
         internal List<double[]> AdjustedBiases { get; } = new();
         internal int TrainingEpocs => trainingEpocs;
+        internal double LearningRate  { get; private set; }
 
         public double[] Input => LayerOutput[0];
         public double[] Output => LayerOutput.Last();
         public List<(double[] inputs, double[] expected, double[] actual)> TrainingData { get; } = new();
 
+        private NetworkContext() { }
+
+        internal static NetworkContext Create(params int[] sizes)
+        {
+            var ctx = new NetworkContext();
+            var prevSize = 0;
+            foreach (var size in sizes)
+            {
+                ctx.PreOutput.Add(new double[size]);
+                ctx.LayerOutput.Add(new double[size]);
+                ctx.Expected.Add(new double[size]);
+                ctx.AdjustedBiases.Add(new double[size]);
+                ctx.AdjustedWeights.Add(new double[size * prevSize]);
+
+                prevSize = size;
+            }
+            return ctx;
+        }
 
         internal NetworkContext CopyTo(NetworkContext other)
         {
             other.trainingEpocs = trainingEpocs;    
+            other.LearningRate = LearningRate;  
             CopyArray(PreOutput, other.PreOutput);
             CopyArray(LayerOutput, other.LayerOutput);
             CopyArray(Expected, other.Expected);
@@ -56,40 +78,17 @@ namespace NeuralNetwork.Core
             }
         }
 
-        public void CopyFrom(NetworkContext other)
+        public void SetLearningRate(double min, double max)
         {
-            trainingEpocs += other.trainingEpocs;
-
-            for(var i = 0; i < AdjustedBiases.Count; i++)
-            {
-                for (var k = 0; k < AdjustedBiases[i].Length; k++)
-                    AdjustedBiases[i][k] += other.AdjustedBiases[i][k];
-            }
-
-            for (var i = 0; i < AdjustedWeights.Count; i++)
-            {
-                for (var k = 0; k < AdjustedWeights[i].Length; k++)
-                    AdjustedWeights[i][k] += other.AdjustedWeights[i][k];
-            }
+            maxLearningRate = max;
+            minLearningRate = min;
+            LearningRate = min;
         }
 
-        private NetworkContext() { }
-
-        internal static NetworkContext Create(params int[] sizes)
+        internal void ChangeLearning(double ratio)
         {
-            var ctx = new NetworkContext();
-            var prevSize = 0;
-            foreach (var size in sizes)
-            {
-                ctx.PreOutput.Add(new double[size]);
-                ctx.LayerOutput.Add(new double[size]);
-                ctx.Expected.Add(new double[size]);
-                ctx.AdjustedBiases.Add(new double[size]);
-                ctx.AdjustedWeights.Add(new double[size * prevSize]);
-
-                prevSize = size;
-            }
-            return ctx;
+            LearningRate *= ratio;
+            LearningRate = Math.Clamp(LearningRate, minLearningRate, maxLearningRate);
         }
 
         public void SetInput(double[] inputs)

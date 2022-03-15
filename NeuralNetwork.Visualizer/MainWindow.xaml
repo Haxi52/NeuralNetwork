@@ -12,6 +12,10 @@
             <Button x:Name="InitButton" Margin="5" Height="40" Width="100" Click="InitButton_Click">Init</Button>
             <TextBlock x:Name="StatusText" FontSize="26">Status</TextBlock>
         </StackPanel>
+        <StackPanel Orientation="Horizontal" Height="50" Panel.ZIndex="10" VerticalAlignment="Top" Margin="0,55,0,0">
+            <Button x:Name="SaveButton" Margin="5" Height="40" Width="100" Click="SaveButton_Click">Save</Button>
+            <Button x:Name="LoadButton" Margin="5" Height="40" Width="100" Click="LoadButton_Click">Load</Button>
+        </StackPanel>
         
         <Border BorderThickness="3" BorderBrush="Black" CornerRadius="5" Margin="5,5,5,5">
             <Canvas x:Name="Canvas" Background="LightGray" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">

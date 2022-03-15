@@ -8,6 +8,7 @@ namespace NeuralNetwork.Core;
 
 internal class ReLUActivation : IActivation
 {
+    public ActivationType ActivationType => ActivationType.ReLU;
     public double[] Forward(NetworkContext ctx, int index)
     {
         var input = ctx.PreOutput[index];

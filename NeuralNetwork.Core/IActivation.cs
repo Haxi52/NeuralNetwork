@@ -8,6 +8,7 @@ namespace NeuralNetwork.Core;
 
 public interface IActivation
 {
+    public ActivationType ActivationType { get; }
     public double[] Forward(NetworkContext ctx, int index);
 
     public double Activate(double input);

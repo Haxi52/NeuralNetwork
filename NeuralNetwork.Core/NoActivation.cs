@@ -8,6 +8,8 @@ namespace NeuralNetwork.Core;
 
 internal class NoActivation : IActivation
 {
+    public ActivationType ActivationType => ActivationType.None;
+
     public double[] Forward(NetworkContext ctx, int index)
     {
         Array.Copy(ctx.PreOutput[index], ctx.LayerOutput[index], ctx.PreOutput[index].Length);

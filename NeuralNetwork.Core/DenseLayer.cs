@@ -28,6 +28,44 @@ internal class DenseLayer : ILayer
         weights = new double[size * inputs];
     }
 
+    public static DenseLayer Load(BinaryReader reader)
+    {
+        var index = reader.ReadInt32();
+        var size = reader.ReadInt32();
+        var inputSize = reader.ReadInt32();
+        var activation = (ActivationType)reader.ReadInt32();
+
+        var layer = new DenseLayer(index, inputSize, size, ActivationFactory.Create(activation));
+
+        foreach(var i in Enumerable.Range(0, size))
+        {
+            layer.biases[i] = reader.ReadDouble();
+        }
+
+        foreach(var i in Enumerable.Range(0, (inputSize * size)))
+        {
+            layer.weights[i] = reader.ReadDouble();
+        }
+
+        return layer;
+    }
+
+    public void Save(BinaryWriter writer)
+    {
+        writer.Write(index);
+        writer.Write(Size);
+        writer.Write(InputSize);
+        writer.Write((int)activation.ActivationType);
+
+        foreach(var val in biases)
+            writer.Write(val);
+
+        foreach(var val in weights)
+            writer.Write(val);
+
+        writer.Flush();
+    }
+
     public double[] Forward(NetworkContext ctx)
     {
         var input = ctx.LayerOutput[index - 1];
@@ -89,16 +127,16 @@ internal class DenseLayer : ILayer
         return output;
     }
 
-    public void Apply(NetworkContext ctx, double rate)
+    public void Apply(NetworkContext ctx)
     {
         for (var i = 0; i < Size; i++)
         {
-            biases[i] -= (ctx.AdjustedBiases[index][i] / ctx.TrainingEpocs) * rate;
+            biases[i] -= (ctx.AdjustedBiases[index][i] / ctx.TrainingEpocs) * ctx.LearningRate;
         }
 
         for (var i = 0; i < weights.Length; i++)
         {
-            weights[i] -= (ctx.AdjustedWeights[index][i] / ctx.TrainingEpocs) * rate;
+            weights[i] -= (ctx.AdjustedWeights[index][i] / ctx.TrainingEpocs) * ctx.LearningRate;
         }
     }
 

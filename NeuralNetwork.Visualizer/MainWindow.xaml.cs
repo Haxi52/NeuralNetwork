@@ -29,14 +29,13 @@ namespace NeuralNetworkVisualizer
         private readonly List<UIElement> ExpectedPoints = new List<UIElement>();
         private readonly List<UIElement> PredictedPoints = new List<UIElement>();
 
-        private readonly Network network;
-        private readonly NetworkContext ctx;
+        private Network network;
+        private NetworkContext ctx;
         private int generations = 0;
         private double cost = 0f;
-        private readonly double learningRate = 0.001d;
+        private readonly double minLearningRate = 0.001d;
+        private readonly double maxLearningRate = 0.1d;
         private volatile bool isLearning = false;
-        private string statusText = string.Empty;
-
 
         public MainWindow()
         {
@@ -57,6 +56,7 @@ namespace NeuralNetworkVisualizer
 
             network.Randomize();
             ctx = network.CreateContext(18);
+            ctx.SetLearningRate(minLearningRate, maxLearningRate);
         }
 
         private void DrawGraph()
@@ -150,7 +150,7 @@ namespace NeuralNetworkVisualizer
                 int epoc = 0;
                 while (sw.Elapsed < testTime && isLearning)
                 {
-                    cost = await network.Train(ctx, learningRate);
+                    cost = await network.Train(ctx);
                     generations++;
                     epoc++;
                 }
@@ -246,6 +246,41 @@ namespace NeuralNetworkVisualizer
             {
                 network.Randomize();
                 generations = 0;
+            }
+        }
+
+        private void SaveButton_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new Microsoft.Win32.SaveFileDialog
+            {
+                Filter = "(Neural Network)|*.nn",
+                DefaultExt = ".nn",
+                Title = "Save Network"
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                using var file = System.IO.File.OpenWrite(dialog.FileName);
+                network.Save(file);
+            }
+        }
+
+        private async void LoadButton_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new Microsoft.Win32.OpenFileDialog()
+            {
+                Title = "Open Network",
+                Filter = "(Neural Network)|*.nn",
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                using var file = System.IO.File.OpenRead(dialog.FileName);
+                network = Network.Load(file);
+                ctx = network.CreateContext(18);
+                ctx.SetLearningRate(minLearningRate, maxLearningRate);
+
+                await PredictAndDraw();
             }
         }
     }
