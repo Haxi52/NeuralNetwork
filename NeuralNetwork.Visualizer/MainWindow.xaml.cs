@@ -33,8 +33,7 @@ namespace NeuralNetworkVisualizer
         private NetworkContext ctx;
         private int generations = 0;
         private double cost = 0f;
-        private readonly double minLearningRate = 0.001d;
-        private readonly double maxLearningRate = 0.1d;
+        private readonly double learningRate = 0.005d;
         private volatile bool isLearning = false;
 
         public MainWindow()
@@ -51,13 +50,12 @@ namespace NeuralNetworkVisualizer
 
             network = new Network(1)
                 .AddLayer(32, ActivationType.ReLU)
-                .AddLayer(32, ActivationType.Softmax)
-                //.AddLayer(32, ActivationType.ReLU)
+                .AddLayer(32, ActivationType.Sigmoid)
                 .AddLayer(1, ActivationType.None);
 
             network.Randomize();
-            ctx = network.CreateContext(18);
-            ctx.SetLearningRate(minLearningRate, maxLearningRate);
+            ctx = network.CreateContext(5);
+            ctx.SetLearningRate(learningRate);
         }
 
         private void DrawGraph()
@@ -103,7 +101,7 @@ namespace NeuralNetworkVisualizer
             lock (network)
             {
                 var input = new[] { 0d };
-                for (double i = -1; i <= 1d; i += 0.001d)
+                for (double i = -1; i <= 1d; i += 0.005d)
                 {
                     input[0] = i;
                     ctx.SetInput(input);
@@ -146,7 +144,7 @@ namespace NeuralNetworkVisualizer
             startLearningTime = DateTime.UtcNow;
             var testTime = TimeSpan.FromMilliseconds(100);
             ctx.TrainingData.Clear();
-            for (double i = -1; i <= 1d; i += 0.004d)
+            for (double i = -1.25d; i <= 1.25d; i += 0.05d)
             {
                 ctx.TrainingData.Add((new[] { i }, new[] { Fit(i) }, new double[1]));
             }
@@ -286,8 +284,7 @@ namespace NeuralNetworkVisualizer
                 using var file = System.IO.File.OpenRead(dialog.FileName);
                 network = Network.Load(file);
                 ctx = network.CreateContext(18);
-                ctx.SetLearningRate(minLearningRate, maxLearningRate);
-
+                ctx.SetLearningRate(learningRate);
                 await PredictAndDraw();
             }
         }

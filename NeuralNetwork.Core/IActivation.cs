@@ -9,8 +9,8 @@ namespace NeuralNetwork.Core;
 public interface IActivation
 {
     public ActivationType ActivationType { get; }
-    public double[] Forward(NetworkContext ctx, int index);
-    public double Prime(double value);
+    public double[] Forward(double[] input, double[] output);
+    public double Derivative(double[] value, int index);
 
 }
 
@@ -20,5 +20,6 @@ public enum ActivationType
     ReLU,
     Softmax,
     Sigmoid,
+    Tanh,
 }
 

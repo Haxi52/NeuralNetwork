@@ -16,6 +16,7 @@ namespace NeuralNetwork.Core
                 ActivationType.ReLU => new ReLUActivation(),
                 ActivationType.Softmax => new SoftmaxActivation(),
                 ActivationType.Sigmoid => new SigmoidActivation(),
+                ActivationType.Tanh => new TanhActivation(),
                 _ => throw new Exception(),
             };
         }

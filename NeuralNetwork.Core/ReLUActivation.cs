@@ -9,11 +9,8 @@ namespace NeuralNetwork.Core;
 internal class ReLUActivation : IActivation
 {
     public ActivationType ActivationType => ActivationType.ReLU;
-    public double[] Forward(NetworkContext ctx, int index)
+    public double[] Forward(double[] input, double[] output)
     {
-        var input = ctx.PreOutput[index];
-        var output = ctx.LayerOutput[index];
-
         for (var i = 0; i < input.Length; i++)
         {
             output[i] = Math.Max(0, input[i]);
@@ -24,10 +21,10 @@ internal class ReLUActivation : IActivation
 
     public double Activate(double input) => Math.Max(0, input);
 
-    public double Prime(double input)
+    public double Derivative(double[] value, int index)
     {
-        if (input <= 0) return 0;
-        return 1d; ;
+        if (value[index] <= 0) return 0;
+        return 1d;
     }
 }
 

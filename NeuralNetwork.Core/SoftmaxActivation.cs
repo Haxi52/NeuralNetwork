@@ -9,11 +9,8 @@ namespace NeuralNetwork.Core;
 internal class SoftmaxActivation : IActivation
 {
     public ActivationType ActivationType => ActivationType.Softmax;
-    public double[] Forward(NetworkContext ctx, int index)
+    public double[] Forward(double[] input, double[] output)
     {
-        var input = ctx.PreOutput[index];
-        var output = ctx.LayerOutput[index];
-
         var max = .0d;
         for (var i = 0; i < output.Length; i++)
         {
@@ -39,5 +36,12 @@ internal class SoftmaxActivation : IActivation
         return output;
     }
 
-    public double Prime(double input) => Math.Pow(input, 2);
+    public double Derivative(double[] value, int index)
+    {
+        for (var i = 0; i < value.Length; i++)
+            if (value[i] > value[index]) return 1d;
+
+        return 0d;
+    } 
+
 }

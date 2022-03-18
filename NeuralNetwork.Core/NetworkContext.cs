@@ -18,7 +18,7 @@ namespace NeuralNetwork.Core
         internal List<double[]> AdjustedWeights { get; } = new();
         internal List<double[]> AdjustedBiases { get; } = new();
         internal int TrainingEpocs => trainingEpocs;
-        internal double LearningRate  { get; private set; }
+        internal double LearningRate { get; private set; }
 
         public double[] Input => LayerOutput[0];
         public double[] Output => LayerOutput.Last();
@@ -43,62 +43,50 @@ namespace NeuralNetwork.Core
             return ctx;
         }
 
+        internal void ShuffleTrainingData()
+        {
+            var rng = new Random();
+            int n = TrainingData.Count;
+            while (n > 1)
+            {
+                int k = rng.Next(n--);
+                (TrainingData[k], TrainingData[n]) = (TrainingData[n], TrainingData[k]);
+            }
+        }
+
         internal NetworkContext CopyTo(NetworkContext other)
         {
-            other.trainingEpocs = trainingEpocs;    
-            other.LearningRate = LearningRate;  
-            CopyArray(PreOutput, other.PreOutput);
-            CopyArray(LayerOutput, other.LayerOutput);
-            CopyArray(Expected, other.Expected);
+            other.LearningRate = LearningRate;
 
             if (TrainingData.Count != other.TrainingData.Count)
             {
                 other.TrainingData.Clear();
-                foreach(var (inputs, expected, actual) in TrainingData)
+                foreach (var (inputs, expected, actual) in TrainingData)
                 {
                     other.TrainingData.Add((new double[inputs.Length], new double[expected.Length], new double[actual.Length]));
                 }
-           
-                for(var i = 0; i < TrainingData.Count; i++)
+
+                for (var i = 0; i < TrainingData.Count; i++)
                 {
                     Array.Copy(TrainingData[i].inputs, other.TrainingData[i].inputs, TrainingData[i].inputs.Length);
                     Array.Copy(TrainingData[i].expected, other.TrainingData[i].expected, TrainingData[i].expected.Length);
                     Array.Copy(TrainingData[i].actual, other.TrainingData[i].actual, TrainingData[i].actual.Length);
-                } 
+                }
             }
 
             return other;
-
-            static void CopyArray(List<double[]> source, List<double[]> destination)
-            {
-                for (var i = 0; i < source.Count; i++)
-                {
-                    Array.Copy(source[i], destination[i], source[i].Length);
-                }
-            }
         }
 
-        public void SetLearningRate(double min, double max)
+        public void SetLearningRate(double rate)
         {
-            maxLearningRate = max;
-            minLearningRate = min;
-            LearningRate = min;
-        }
-
-        internal void ChangeLearning(double ratio)
-        {
-            LearningRate *= ratio;
-            LearningRate = Math.Clamp(LearningRate, minLearningRate, maxLearningRate);
+            LearningRate = rate;
         }
 
         public void SetInput(double[] inputs)
         {
             if (inputs == null || inputs.Length != Input.Length)
-                throw new ArgumentException(nameof(inputs));
-            lock (this)
-            {
-                Array.Copy(inputs, Input, inputs.Length);
-            }
+                throw new ArgumentException(null, nameof(inputs));
+            Array.Copy(inputs, Input, inputs.Length);
         }
 
         internal void Reset()
@@ -111,7 +99,7 @@ namespace NeuralNetwork.Core
             {
                 Array.Clear(weights);
             }
-            foreach(var (inputs, expected, actual) in TrainingData)
+            foreach (var (inputs, expected, actual) in TrainingData)
             {
                 Array.Fill(actual, double.NaN);
             }
@@ -130,8 +118,8 @@ namespace NeuralNetwork.Core
                 {
                     if (double.IsNaN(set.data.actual[k])) continue;
                     cost += Math.Pow(set.data.expected[k] - set.data.actual[k], 2);
-                    j++;
                 }
+                j += set.data.actual.Length;
             }
             return cost / j;
         }

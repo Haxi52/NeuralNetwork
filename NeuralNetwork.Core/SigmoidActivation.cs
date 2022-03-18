@@ -9,10 +9,8 @@ namespace NeuralNetwork.Core;
 internal class SigmoidActivation : IActivation
 {
     public ActivationType ActivationType => ActivationType.Sigmoid;
-    public double[] Forward(NetworkContext ctx, int index)
+    public double[] Forward(double[] input, double[] output)
     {
-        var input = ctx.PreOutput[index];
-        var output = ctx.LayerOutput[index];
 
         for (var i = 0; i < input.Length; i++)
         {
@@ -22,6 +20,7 @@ internal class SigmoidActivation : IActivation
         return output;
     }
 
-    public double Prime(double input) => input * (1.0d - input);
+    public double Derivative(double[] value, int index) => value[index] * (1.0d - value[index]);
+
 }
 

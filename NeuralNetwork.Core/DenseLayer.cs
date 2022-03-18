@@ -81,7 +81,7 @@ internal class DenseLayer : ILayer
             }
         }
 
-        return activation.Forward(ctx, index);
+        return activation.Forward(output, ctx.LayerOutput[index]);
     }
 
     public void Randomize(int? seed = null)
@@ -112,7 +112,7 @@ internal class DenseLayer : ILayer
         for (var j = 0; j < Size; j++) // for each neuron in this layer
         {
             var actual = ctx.LayerOutput[index][j];
-            var error = (actual - expected[j]) * (activation.Prime(ctx.LayerOutput[index][j]) + double.Epsilon);
+            var error = (actual - expected[j]) * (activation.Derivative(ctx.LayerOutput[index], j) + double.Epsilon);
 
             ctx.AdjustedBiases[index][j] += error;
             for (var k = 0; k < output.Length; k++) // for each input neuron

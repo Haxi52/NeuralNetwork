@@ -10,7 +10,6 @@ public class Network
 {
     private readonly List<ILayer> layers = new();
     private readonly int inputCount;
-    private double Cost = 0d;
     private List<NetworkContext> contextList = new();
 
     public IEnumerable<ILayer> Layers => layers;
@@ -26,7 +25,7 @@ public class Network
         var expectedHeader = Encoding.UTF8.GetBytes("nn");
         var header = reader.ReadBytes(2);
         var headerVersion = reader.ReadInt32();
-        
+
         if (header[0] != expectedHeader[0] || header[1] != expectedHeader[1])
         {
             throw new Exception("Not a valid neural network save.");
@@ -40,7 +39,7 @@ public class Network
 
         var network = new Network(inputCount);
 
-        while(stream.Position < stream.Length)
+        while (stream.Position < stream.Length)
         {
             network.layers.Add(DenseLayer.Load(reader));
         }
@@ -55,23 +54,24 @@ public class Network
         writer.Write(0xA0);
         writer.Write(inputCount);
 
-        foreach(var layer in layers)
+        foreach (var layer in layers)
         {
             if (layer is DenseLayer dense)
             {
                 dense.Save(writer);
             }
         }
-        
+
         writer.Flush();
 
     }
 
-    public NetworkContext CreateContext(int threads)
+    public NetworkContext CreateContext(int? threads = null)
     {
+        threads ??= Environment.ProcessorCount;
         var sizes = new[] { inputCount }.Concat(layers.Select(i => i.Size)).ToArray();
         var ctx = NetworkContext.Create(sizes);
-        contextList = Enumerable.Range(0, threads)
+        contextList = Enumerable.Range(0, threads.Value)
             .Select(i => NetworkContext.Create(sizes))
             .ToList();
 
@@ -101,6 +101,8 @@ public class Network
 
     public async Task<double> Train(NetworkContext ctx)
     {
+        ctx.ShuffleTrainingData();
+
         var tasks = contextList
             .Select(context =>
             Task.Run(() =>
@@ -108,7 +110,6 @@ public class Network
                 ctx.CopyTo(context);
                 context.Reset();
                 TrainInternal(context, 0, contextList.Count);
-
                 lock (ctx)
                 {
                     foreach (var layer in layers)
@@ -119,12 +120,6 @@ public class Network
         await Task.WhenAll(tasks);
 
         var cost = contextList.Select(i => i.GetCost()).Average();
-        //var change = cost - Cost;
-        //if (change < -double.Epsilon || change > double.Epsilon)
-        //{
-        //    ctx.ChangeLearning(change);
-        //    Cost = cost;
-        //}
         return cost;
     }
 
@@ -144,7 +139,7 @@ public class Network
             }
 
             Array.Copy(ctx.Output, actual, ctx.Output.Length);
-            Array.Copy(expected, ctx.Expected[ctx.Expected.Count - 1], expected.Length);
+            Array.Copy(expected, ctx.Expected[^1], expected.Length);
 
             for (var lIndex = layers.Count - 1; lIndex >= 0; lIndex--)
             {

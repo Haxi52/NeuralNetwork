@@ -13,8 +13,8 @@ network.AddLayer(2, ActivationType.Sigmoid);
 network.AddLayer(2, ActivationType.Sigmoid);
 network.Randomize();
 
-var ctx = network.CreateContext();
-
+var ctx = network.CreateContext(6);
+ctx.SetLearningRate(0.05d);
 var inputSet = new[]
 {
     //new[] { 0d, 0d },
@@ -61,7 +61,7 @@ void LoopInteractive()
 
     while (Console.ReadKey().Key != ConsoleKey.Escape)
     {
-        var cost = network.Train(ctx, 0.05d);
+        var cost = network.Train(ctx);
         generations++;
         ctx.SetInput(inputSet[0]);
         var result2 = network.Process(ctx);
@@ -86,7 +86,7 @@ async Task LearnALot()
     {
         for (var i = 0; i < 1000; i++)
         {
-            cost = await network.Train(ctx, 0.05d);
+            cost = await network.Train(ctx);
             generations++;
         }
         ctx.SetInput(inputSet[0]);

@@ -10,11 +10,11 @@ internal class NoActivation : IActivation
 {
     public ActivationType ActivationType => ActivationType.None;
 
-    public double[] Forward(NetworkContext ctx, int index)
+    public double[] Forward(double[] input, double[] output)
     {
-        Array.Copy(ctx.PreOutput[index], ctx.LayerOutput[index], ctx.PreOutput[index].Length);
-        return ctx.LayerOutput[index];
+        Array.Copy(input, output, input.Length);
+        return output;
     }
 
-    public double Prime(double input) => 1d;
+    public double Derivative(double[] value, int index) => 1d;
 }
