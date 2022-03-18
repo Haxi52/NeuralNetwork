@@ -37,12 +37,12 @@ internal class DenseLayer : ILayer
 
         var layer = new DenseLayer(index, inputSize, size, ActivationFactory.Create(activation));
 
-        foreach(var i in Enumerable.Range(0, size))
+        foreach (var i in Enumerable.Range(0, size))
         {
             layer.biases[i] = reader.ReadDouble();
         }
 
-        foreach(var i in Enumerable.Range(0, (inputSize * size)))
+        foreach (var i in Enumerable.Range(0, (inputSize * size)))
         {
             layer.weights[i] = reader.ReadDouble();
         }
@@ -57,10 +57,10 @@ internal class DenseLayer : ILayer
         writer.Write(InputSize);
         writer.Write((int)activation.ActivationType);
 
-        foreach(var val in biases)
+        foreach (var val in biases)
             writer.Write(val);
 
-        foreach(var val in weights)
+        foreach (var val in weights)
             writer.Write(val);
 
         writer.Flush();
@@ -112,14 +112,14 @@ internal class DenseLayer : ILayer
         for (var j = 0; j < Size; j++) // for each neuron in this layer
         {
             var actual = ctx.LayerOutput[index][j];
-            var error = actual - expected[j];
+            var error = (actual - expected[j]) * (activation.Prime(ctx.LayerOutput[index][j]) + double.Epsilon);
 
             ctx.AdjustedBiases[index][j] += error;
             for (var k = 0; k < output.Length; k++) // for each input neuron
             {
-                output[k] += weights[i] * error * ctx.LayerOutput[index][j]; 
+                output[k] += weights[i] * error;
 
-                ctx.AdjustedWeights[index][i] += error * input[k] ;
+                ctx.AdjustedWeights[index][i] += error * input[k];
                 i++;
             }
         }

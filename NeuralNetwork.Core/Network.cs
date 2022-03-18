@@ -119,7 +119,12 @@ public class Network
         await Task.WhenAll(tasks);
 
         var cost = contextList.Select(i => i.GetCost()).Average();
-     
+        //var change = cost - Cost;
+        //if (change < -double.Epsilon || change > double.Epsilon)
+        //{
+        //    ctx.ChangeLearning(change);
+        //    Cost = cost;
+        //}
         return cost;
     }
 

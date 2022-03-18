@@ -10,10 +10,8 @@ public interface IActivation
 {
     public ActivationType ActivationType { get; }
     public double[] Forward(NetworkContext ctx, int index);
+    public double Prime(double value);
 
-    public double Activate(double input);
-
-    public double Prime(double input);
 }
 
 public enum ActivationType

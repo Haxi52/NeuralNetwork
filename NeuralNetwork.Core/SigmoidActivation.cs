@@ -21,9 +21,7 @@ internal class SigmoidActivation : IActivation
 
         return output;
     }
-    public double Activate(double input) => 1d / (1d + Math.Pow(Math.E, -input));
 
-    //public double Prime(double input) => Math.Pow(Math.E, -input) / Math.Pow(1 + Math.Pow(Math.E, -input), 2); 
-    public double Prime(double input) => input * (1 - input);
+    public double Prime(double input) => input * (1.0d - input);
 }
 

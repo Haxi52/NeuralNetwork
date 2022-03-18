@@ -24,6 +24,10 @@ internal class ReLUActivation : IActivation
 
     public double Activate(double input) => Math.Max(0, input);
 
-    public double Prime(double input) => input;
+    public double Prime(double input)
+    {
+        if (input <= 0) return 0;
+        return 1d; ;
+    }
 }
 

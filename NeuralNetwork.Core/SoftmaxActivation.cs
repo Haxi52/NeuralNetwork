@@ -14,9 +14,15 @@ internal class SoftmaxActivation : IActivation
         var input = ctx.PreOutput[index];
         var output = ctx.LayerOutput[index];
 
+        var max = .0d;
+        for (var i = 0; i < output.Length; i++)
+        {
+            max = Math.Max(max, output[i]);
+        }
+
         for (var i = 0; i < input.Length; i++)
         {
-            output[i] = Math.Exp(input[i]);
+            output[i] = Math.Exp(input[i] - max);
         }
 
         var sum = .0d;
@@ -33,7 +39,5 @@ internal class SoftmaxActivation : IActivation
         return output;
     }
 
-    public double Activate(double input) => input;
-
-    public double Prime(double input) => input;
+    public double Prime(double input) => Math.Pow(input, 2);
 }

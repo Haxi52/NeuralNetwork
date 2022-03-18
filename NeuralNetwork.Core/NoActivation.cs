@@ -16,6 +16,5 @@ internal class NoActivation : IActivation
         return ctx.LayerOutput[index];
     }
 
-    public double Activate(double input) => input;
-    public double Prime(double input) => input;
+    public double Prime(double input) => 1d;
 }

@@ -51,7 +51,8 @@ namespace NeuralNetworkVisualizer
 
             network = new Network(1)
                 .AddLayer(32, ActivationType.ReLU)
-                .AddLayer(32, ActivationType.Sigmoid)
+                .AddLayer(32, ActivationType.Softmax)
+                //.AddLayer(32, ActivationType.ReLU)
                 .AddLayer(1, ActivationType.None);
 
             network.Randomize();
@@ -85,6 +86,13 @@ namespace NeuralNetworkVisualizer
         {
             return Math.Sin(i * Math.PI) / Math.PI;
         }
+
+        //private static double Fit(double i)
+        //{
+        //    if (Math.Floor(i * 4) % 2 == 0) return 0.25d;
+        //    return -0.25d;
+        //}
+
 
         private List<Point> predictions = new List<Point>();
         private DateTime startLearningTime;
